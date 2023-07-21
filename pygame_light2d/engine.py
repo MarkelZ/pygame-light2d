@@ -2,11 +2,16 @@ import moderngl
 import pygame
 import numpy as np
 from enum import Enum
+from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST
 
 
 class Layer(Enum):
     BACKGROUND = 1,
     FOREGROUND = 2,
+
+
+BACKGROUND = Layer.BACKGROUND
+FOREGROUND = Layer.FOREGROUND
 
 
 class LightingEngine:
@@ -22,9 +27,6 @@ class LightingEngine:
         # Light and hull lists
         self.lights = []
         self.hulls = []
-
-        # The below code should be split into helper functions
-        # for readability
 
         # Configure pygame
         if not pygame.get_init():
@@ -43,6 +45,7 @@ class LightingEngine:
         fragment_filepath_light = 'shaders/fragment_light.glsl'
         fragment_filepath_blur = 'shaders/fragment_blur.glsl'
         fragment_filepath_mask = 'shaders/fragment_mask.glsl'
+        fragment_filepath_draw = 'shaders/fragment_draw.glsl'
 
         with open(vertex_filepath, 'r') as f:
             vertex_src = f.read()
@@ -56,6 +59,9 @@ class LightingEngine:
         with open(fragment_filepath_mask, 'r') as f:
             fragment_src_mask = f.read()
 
+        with open(fragment_filepath_draw, 'r') as f:
+            fragment_src_draw = f.read()
+
         self.prog_light = self.ctx.program(vertex_shader=vertex_src,
                                            fragment_shader=fragment_src_light)
 
@@ -65,15 +71,18 @@ class LightingEngine:
         self.prog_mask = self.ctx.program(vertex_shader=vertex_src,
                                           fragment_shader=fragment_src_mask)
 
+        self.prog_draw = self.ctx.program(vertex_shader=vertex_src,
+                                          fragment_shader=fragment_src_draw)
+
         # Screen mesh
         vertices = np.array([(-1.0, 1.0), (1.0, 1.0), (-1.0, -1.0),
                             (-1.0, -1.0), (1.0, 1.0), (1.0, -1.0)], dtype=np.float32)
         tex_coords = np.array([(0.0, 1.0), (1.0, 1.0), (0.0, 0.0),
                                (0.0, 0.0), (1.0, 1.0), (1.0, 0.0)], dtype=np.float32)
-        data = np.hstack([vertices, tex_coords])
+        vertex_data = np.hstack([vertices, tex_coords])
 
-        # VAO and VBO
-        vbo = self.ctx.buffer(data)
+        # VAO and VBO for screen mesh
+        vbo = self.ctx.buffer(vertex_data)
         self.vao_light = self.ctx.vertex_array(self.prog_light, [
             (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
@@ -84,23 +93,30 @@ class LightingEngine:
             (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
 
-        # Layers
-        self.background = self.ctx.texture((width, height), components=4)
-        self.background.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        self._bg_fbo = self.ctx.framebuffer([self.background])
-        self.foreground = self.ctx.texture((width, height), components=4)
-        self.foreground.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        self._fg_fbo = self.ctx.framebuffer([self.foreground])
+        # Frame buffers
+        self._tex_bg = self.ctx.texture((width, height), components=4)
+        self._tex_bg.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self._fbo_bg = self.ctx.framebuffer([self._tex_bg])
+
+        self.tex_fg = self.ctx.texture((width, height), components=4)
+        self.tex_fg.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self._fbo_fg = self.ctx.framebuffer([self.tex_fg])
+
+        self.tex_lt = self.ctx.texture((width, height), components=4)
+        self.tex_lt.filter = (moderngl.LINEAR, moderngl.LINEAR)
+        self._fbo_lt = self.ctx.framebuffer([self.tex_lt])
+        # downscale for free AA
 
         # Ambient occlussion map
         self.aomap = self.ctx.texture((width, height), components=4)
         self.aomap.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        self._lm_fbo = self.ctx.framebuffer([self.aomap])
+        self._fbo_ao = self.ctx.framebuffer([self.aomap])
 
+    # TEMP
     def _point_to_coord(self, p):
         return (p[0]/self.width, 1 - (p[1]/self.height))
 
-    def create_texture(self, path: str):
+    def load_texture(self, path: str):
         img = pygame.image.load(path).convert_alpha()
         img_flip = pygame.transform.flip(img, False, True)
         img_data = pygame.image.tostring(img_flip, 'RGBA')
@@ -109,23 +125,92 @@ class LightingEngine:
                                components=4, data=img_data)
         tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
 
-    def draw_texture(self, tex: moderngl.Texture, layer: Layer, position: tuple[int, int] = (0, 0)):
-        pass
+    def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
+        # Create a framebuffer with the texture
+        fb = self.ctx.framebuffer([tex])
 
-    def draw_surface(self, sfc: pygame.Surface, layer: Layer, position: tuple[int, int]):
-        texture = LightingEngine._surface_to_texture(sfc)
-        self.draw_texture(texture, layer, position)
+        # Select destination framebuffer correcponding to layer
+        if layer == Layer.BACKGROUND:
+            fbo = self._fbo_bg
+        elif layer == Layer.FOREGROUND:
+            fbo = self._fbo_fg
+
+        # Blit texture onto destination
+        glBlitNamedFramebuffer(fb.glo, fbo.glo, source.x, source.y, source.w, source.h,
+                               dest.x, dest.y, dest.w, dest.h, GL_COLOR_BUFFER_BIT, GL_NEAREST)
+
+    def render_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
+        # Mesh for destination rect on screen
+        width, height = self.ctx.screen.size
+        x = 2. * dest.x / width - 1.
+        y = 1. - 2. * dest.y / height
+        w = 2. * dest.w / width
+        h = 2. * dest.h / height
+        vertices = np.array([(x, y), (x + w, y), (x, y - h),
+                            (x, y - h), (x + w, y), (x + w, y - h)], dtype=np.float32)
+
+        # Mesh for source within the texture
+        x = source.x / tex.size[0]
+        y = source.y / tex.size[1]
+        w = source.w / tex.size[0]
+        h = source.h / tex.size[1]
+
+        p1 = (x, y + h)
+        p2 = (x + w, y + h)
+        p3 = (x, y)
+        p4 = (x + w, y)
+        tex_coords = np.array([p1, p2, p3,
+                               p3, p2, p4], dtype=np.float32)
+
+        # Create VBO and VAO
+        buffer_data = np.hstack([vertices, tex_coords])
+
+        vbo = self.ctx.buffer(buffer_data)
+        vao = self.ctx.vertex_array(self.prog_draw, [
+            (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
+        ])
+
+        # Render texture onto layer with the draw shader
+        if layer == Layer.BACKGROUND:
+            fbo = self._fbo_bg
+        elif layer == Layer.FOREGROUND:
+            fbo = self._fbo_fg
+
+        tex.use()
+        fbo.use()
+        vao.render()
+
+    def _blit_texture_fbo():
+        pass
 
     def clear(self, R=0, G=0, B=0, A=1):
-        self._bg_fbo.clear()
-        self._fg_fbo.clear()
-        self._lm_fbo.clear()
+        self._fbo_bg.clear(R, G, B, A)
+        self._fbo_fg.clear(R, G, B, A)
+        self._fbo_ao.clear(R, G, B, A)
 
-    def render():
-        pass
+    def render(self):
+        # Render lightmap
+        self._fbo_ao.use()
+        self.aomap.use()
+        for light in self.lights:
+            # Send uniforms
 
-    def _surface_to_texture(sfc):
-        pass
+            # Render light shader
+            self.vao_light.render()
+
+            # Apply blur
+
+        # Render onto screen
+        self.ctx.screen.use()
+
+        # Render background masked
+
+    def surface_to_texture(self, sfc: pygame.Surface):
+        tex = self.ctx.texture(sfc.get_size(), 4)
+        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        tex.swizzle = 'BGRA'
+        tex.write(sfc.get_view('1'))
+        return tex
 
     def _render_layer(self, tex):
         pass
