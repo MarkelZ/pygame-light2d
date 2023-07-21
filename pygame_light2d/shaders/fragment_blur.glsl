@@ -14,14 +14,15 @@ out vec4 color;
 const float blurRadius=6.;
 const int kernelSize=int(blurRadius)*2+1;
 
+const float blurAttenuation=8.;// Increase this number to make it SHARPER
+
 void main()
 {
     vec2 texelSize=1./textureSize(imageTexture,0);
     
     // Blur strength
     vec2 diff=lightPos-fragmentTexCoord;
-    // float blurStrength=10-9*dot(diff,diff);// Increase this number to make it SHARPER
-    float blurStrength=1.+1./(8*dot(diff,diff)+.01);// Increase this number to make it SHARPER
+    float blurStrength=1.+1./(blurAttenuation*dot(diff,diff)+.01);
     
     // Gaussian kernel weights
     float weights[kernelSize];

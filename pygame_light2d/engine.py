@@ -4,6 +4,9 @@ import numpy as np
 from enum import Enum
 from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST
 
+from light import PointLight
+from hull import Hull
+
 
 class Layer(Enum):
     BACKGROUND = 1,
@@ -25,8 +28,8 @@ class LightingEngine:
         self.ambient = (0., 0., 0., .5)
 
         # Light and hull lists
-        self.lights = []
-        self.hulls = []
+        self.lights: list[PointLight] = []
+        self.hulls: list[Hull] = []
 
         # Configure pygame
         if not pygame.get_init():
@@ -116,7 +119,7 @@ class LightingEngine:
     def _point_to_coord(self, p):
         return (p[0]/self.width, 1 - (p[1]/self.height))
 
-    def load_texture(self, path: str):
+    def load_texture(self, path: str) -> moderngl.Texture:
         img = pygame.image.load(path).convert_alpha()
         img_flip = pygame.transform.flip(img, False, True)
         img_data = pygame.image.tostring(img_flip, 'RGBA')
@@ -124,6 +127,7 @@ class LightingEngine:
         tex = self.ctx.texture(size=img.get_size(),
                                components=4, data=img_data)
         tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        return tex
 
     def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
         # Create a framebuffer with the texture
@@ -189,21 +193,35 @@ class LightingEngine:
         self._fbo_ao.clear(R, G, B, A)
 
     def render(self):
-        # Render lightmap
+        # Use lightmap
         self._fbo_ao.use()
         self.aomap.use()
-        for light in self.lights:
-            # Send uniforms
 
-            # Render light shader
-            self.vao_light.render()
+        # Send uniforms to light shader
+        # point_to_coord should be GONE in the future!!
+        light = self.lights[0]
+        hull = self.hulls[0]
+        self.prog_light['lightPos'] = self._point_to_coord(light.position)
+        self.prog_light['p1'] = self._point_to_coord(hull.vertices[0])
+        self.prog_light['p2'] = self._point_to_coord(hull.vertices[1])
+        self.prog_light['p3'] = self._point_to_coord(hull.vertices[2])
+        self.prog_light['p4'] = self._point_to_coord(hull.vertices[3])
 
-            # Apply blur
+        # Render onto lightmap
+        self.vao_light.render()
 
-        # Render onto screen
+        # Blur lightmap for soft shadows
+        self.prog_blur['lightPos'] = self._point_to_coord(light.position)
+        self.vao_blur.render()
+
+        # Render background masked with the lightmap
         self.ctx.screen.use()
+        self._tex_bg.use()
 
-        # Render background masked
+        self.aomap.use(1)
+        self.prog_mask['lightmap'].value = 1
+
+        self.vao_mask.render()
 
     def surface_to_texture(self, sfc: pygame.Surface):
         tex = self.ctx.texture(sfc.get_size(), 4)
@@ -211,21 +229,3 @@ class LightingEngine:
         tex.swizzle = 'BGRA'
         tex.write(sfc.get_view('1'))
         return tex
-
-    def _render_layer(self, tex):
-        pass
-
-    def _render_lights():
-        pass
-
-    def add_light(self, light):
-        pass
-
-    def remove_light(self, light):
-        pass
-
-    def add_hull(self, hull):
-        pass
-
-    def remove_hull(self, hull):
-        pass
