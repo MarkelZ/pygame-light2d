@@ -193,20 +193,26 @@ class LightingEngine:
         self._fbo_fg.clear(0, 0, 0, 0)
         self._fbo_ao.clear(0, 0, 0, 0)
 
-        # Use lightmap
-        self._fbo_lt.use()
-        self.tex_lt.use()
-
         # Send uniforms to light shader
         # TODO: point_to_coord should be GONE in the future!!
         light = self.lights[0]
         for light in self.lights:
+            # Use lightmap
+            self._fbo_lt.use()
+            self.tex_lt.use()
+
+            # Clear light fb
             self._fbo_lt.clear(0, 0, 0, 0)
+
+            # Send light uniforms
+            self.prog_light['lightPos'] = self._point_to_coord(light.position)
+            self.prog_light['lightCol'] = light._color
+            self.prog_light['lightPower'] = light.power
+            self.prog_light['decay'] = light.decay
 
             # TODO: Use SSBs for sending hull vertices
             # https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
             hull = self.hulls[0]
-            self.prog_light['lightPos'] = self._point_to_coord(light.position)
             self.prog_light['p1'] = self._point_to_coord(hull.vertices[0])
             self.prog_light['p2'] = self._point_to_coord(hull.vertices[1])
             self.prog_light['p3'] = self._point_to_coord(hull.vertices[2])

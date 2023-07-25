@@ -13,10 +13,9 @@ uniform vec2 p2;
 uniform vec2 p3;
 uniform vec2 p4;
 
-const vec4 lightCol=vec4(.4,.2,.1,1.);
-const float lightPower=1.;
-// const float decay=100.;
-const float decay=10.;
+uniform vec4 lightCol;
+uniform float lightPower;
+uniform float decay;
 
 out vec4 color;
 
