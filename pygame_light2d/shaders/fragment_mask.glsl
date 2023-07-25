@@ -17,11 +17,5 @@ void main()
 {
     vec4 texcolor=texture(imageTexture,fragmentTexCoord);
     vec4 lightVal=texture(lightmap,fragmentTexCoord);
-    // color=texcolor*(lightVal+ambient)+.5*lightVal;
-    color=texcolor*ambient[3]+ambient+(texcolor+.5)*lightVal;
-    
-    // DEBUG
-    if(lightVal[3]!=1.){
-        color=vec4(1.,0.,1.,1.);
-    }
+    color=texcolor*(ambient[3]+lightVal[3])+ambient+lightVal;
 }

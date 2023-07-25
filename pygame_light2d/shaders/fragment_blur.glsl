@@ -7,14 +7,13 @@ uniform sampler2D imageTexture;// used texture unit
 // uniform height;
 
 uniform vec2 lightPos;
-// uniform float blurDecay;
 
 out vec4 color;
 
 const float blurRadius=6.;
 const int kernelSize=int(blurRadius)*2+1;
 
-const float blurAttenuation=8.;// Increase this number to make it SHARPER
+const float blurAttenuation=6.;// Increase this number to make it SHARPER
 
 void main()
 {
@@ -22,7 +21,7 @@ void main()
     
     // Blur strength
     vec2 diff=lightPos-fragmentTexCoord;
-    float blurStrength=1.+1./(blurAttenuation*dot(diff,diff)+.01);
+    float blurStrength=1.+1./(blurAttenuation*dot(diff,diff)+.1);
     
     // Gaussian kernel weights
     float weights[kernelSize];
@@ -38,14 +37,14 @@ void main()
         weights[i]/=sum;
     }
     
-    vec3 blurredColor=vec3(0.);
+    vec4 blurredColor=vec4(0.);
     for(int x=-int(blurRadius);x<=int(blurRadius);++x){
         for(int y=-int(blurRadius);y<=int(blurRadius);++y){
             vec2 offset=vec2(float(x),float(y))*texelSize;
             float w=weights[x+int(blurRadius)]*weights[y+int(blurRadius)];
-            blurredColor+=texture(imageTexture,fragmentTexCoord+offset).rgb*w;
+            blurredColor+=texture(imageTexture,fragmentTexCoord+offset)*w;
         }
     }
     
-    color=vec4(blurredColor,1.);
+    color=blurredColor;
 }

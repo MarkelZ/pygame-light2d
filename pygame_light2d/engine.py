@@ -184,35 +184,43 @@ class LightingEngine:
         fbo.use()
         vao.render()
 
-    def _blit_texture_fbo():
-        pass
-
+    # Clear background
     def clear(self, R=0, G=0, B=0, A=1):
         self._fbo_bg.clear(R, G, B, A)
-        self._fbo_fg.clear(R, G, B, A)
-        self._fbo_ao.clear(R, G, B, A)
 
     def render(self):
+        # Clear intermediate buffers
+        self._fbo_fg.clear(0, 0, 0, 0)
+        self._fbo_ao.clear(0, 0, 0, 0)
+
         # Use lightmap
-        self._fbo_ao.use()
-        self.aomap.use()
+        self._fbo_lt.use()
+        self.tex_lt.use()
 
         # Send uniforms to light shader
-        # point_to_coord should be GONE in the future!!
+        # TODO: point_to_coord should be GONE in the future!!
         light = self.lights[0]
-        hull = self.hulls[0]
-        self.prog_light['lightPos'] = self._point_to_coord(light.position)
-        self.prog_light['p1'] = self._point_to_coord(hull.vertices[0])
-        self.prog_light['p2'] = self._point_to_coord(hull.vertices[1])
-        self.prog_light['p3'] = self._point_to_coord(hull.vertices[2])
-        self.prog_light['p4'] = self._point_to_coord(hull.vertices[3])
+        for light in self.lights:
+            self._fbo_lt.clear(0, 0, 0, 0)
 
-        # Render onto lightmap
-        self.vao_light.render()
+            # TODO: Use SSBs for sending hull vertices
+            # https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
+            hull = self.hulls[0]
+            self.prog_light['lightPos'] = self._point_to_coord(light.position)
+            self.prog_light['p1'] = self._point_to_coord(hull.vertices[0])
+            self.prog_light['p2'] = self._point_to_coord(hull.vertices[1])
+            self.prog_light['p3'] = self._point_to_coord(hull.vertices[2])
+            self.prog_light['p4'] = self._point_to_coord(hull.vertices[3])
 
-        # Blur lightmap for soft shadows
-        self.prog_blur['lightPos'] = self._point_to_coord(light.position)
-        self.vao_blur.render()
+            # Render onto lightmap
+            self.vao_light.render()
+
+            # Blur lightmap for soft shadows
+            # and render onto aomap
+            self._fbo_ao.use()
+            self.tex_lt.use()
+            self.prog_blur['lightPos'] = self._point_to_coord(light.position)
+            self.vao_blur.render()
 
         # Render background masked with the lightmap
         self.ctx.screen.use()
