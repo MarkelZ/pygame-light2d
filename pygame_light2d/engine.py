@@ -197,6 +197,10 @@ class LightingEngine:
         # TODO: point_to_coord should be GONE in the future!!
         light = self.lights[0]
         for light in self.lights:
+            # Skip light if disabled
+            if not light.enabled:
+                continue
+
             # Use lightmap
             self._fbo_lt.use()
             self.tex_lt.use()
