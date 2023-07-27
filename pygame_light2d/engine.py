@@ -111,9 +111,9 @@ class LightingEngine:
         # downscale for free AA
 
         # Ambient occlussion map
-        self.aomap = self.ctx.texture((width, height), components=4)
-        self.aomap.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        self._fbo_ao = self.ctx.framebuffer([self.aomap])
+        self.tex_ao = self.ctx.texture((width, height), components=4)
+        self.tex_ao.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self._fbo_ao = self.ctx.framebuffer([self.tex_ao])
 
     # TEMP
     def _point_to_coord(self, p):
@@ -192,10 +192,10 @@ class LightingEngine:
         # Clear intermediate buffers
         self._fbo_fg.clear(0, 0, 0, 0)
         self._fbo_ao.clear(0, 0, 0, 0)
+        self._fbo_lt.clear(0, 0, 0, 0)
 
         # Send uniforms to light shader
         # TODO: point_to_coord should be GONE in the future!!
-        light = self.lights[0]
         for light in self.lights:
             # Skip light if disabled
             if not light.enabled:
@@ -203,10 +203,7 @@ class LightingEngine:
 
             # Use lightmap
             self._fbo_lt.use()
-            self.tex_lt.use()
-
-            # Clear light fb
-            self._fbo_lt.clear(0, 0, 0, 0)
+            self.tex_lt.use()  # not really necessary, maybe to avoid scaling bugs
 
             # Send light uniforms
             self.prog_light['lightPos'] = self._point_to_coord(light.position)
@@ -222,21 +219,20 @@ class LightingEngine:
             self.prog_light['p3'] = self._point_to_coord(hull.vertices[2])
             self.prog_light['p4'] = self._point_to_coord(hull.vertices[3])
 
-            # Render onto lightmap
+            # Render onto aomap
             self.vao_light.render()
 
-            # Blur lightmap for soft shadows
-            # and render onto aomap
-            self._fbo_ao.use()
-            self.tex_lt.use()
-            self.prog_blur['lightPos'] = self._point_to_coord(light.position)
-            self.vao_blur.render()
+        # Blur lightmap for soft shadows and render onto aomap
+        self._fbo_ao.use()
+        self.tex_lt.use()
+        # self.prog_blur['lightPos'] = self._point_to_coord(light.position)
+        self.vao_blur.render()
 
         # Render background masked with the lightmap
         self.ctx.screen.use()
         self._tex_bg.use()
 
-        self.aomap.use(1)
+        self.tex_ao.use(1)
         self.prog_mask['lightmap'].value = 1
 
         self.vao_mask.render()

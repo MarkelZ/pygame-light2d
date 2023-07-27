@@ -39,7 +39,8 @@ bool isOcluded(vec2 p,vec2 q){
 
 void main()
 {
-    color=texture(imageTexture,fragmentTexCoord);
+    // color=texture(imageTexture,fragmentTexCoord);
+    color=vec4(0.,0.,0.,0.);
     
     vec2[]points=vec2[](p1,p2,p3,p4);
     int n=4;

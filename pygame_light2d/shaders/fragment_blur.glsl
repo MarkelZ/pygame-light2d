@@ -6,7 +6,7 @@ uniform sampler2D imageTexture;// used texture unit
 // uniform width;
 // uniform height;
 
-uniform vec2 lightPos;
+// uniform vec2 lightPos;
 
 out vec4 color;
 
@@ -20,8 +20,9 @@ void main()
     vec2 texelSize=1./textureSize(imageTexture,0);
     
     // Blur strength
-    vec2 diff=lightPos-fragmentTexCoord;
-    float blurStrength=1.+1./(blurAttenuation*dot(diff,diff)+.1);
+    // vec2 diff=lightPos-fragmentTexCoord;
+    // float blurStrength=1.+1./(blurAttenuation*dot(diff,diff)+.1);
+    float blurStrength=1.+1./(blurAttenuation+.1);
     
     // Gaussian kernel weights
     float weights[kernelSize];
