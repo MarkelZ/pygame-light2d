@@ -1,18 +1,22 @@
 #version 450 core
 
 in vec2 fragmentTexCoord;// top-left is [0, 1] and bottom-right is [1, 0]
-uniform sampler2D imageTexture;
+uniform sampler2D imageTexture;// used texture unit
 
 // uniform width;
 // uniform height;
 
 uniform vec2 lightPos;
 
+// uniform vec2 p1;
+// uniform vec2 p2;
+// uniform vec2 p3;
+// uniform vec2 p4;
+
 layout(binding=1)uniform hullSSBO{
     float hullV[2048];
 };
 uniform int numV;
-const int maxNumV=1024;
 
 uniform vec4 lightCol;
 uniform float lightPower;
@@ -40,32 +44,27 @@ bool isOcluded(vec2 p,vec2 q){
 
 void main()
 {
-    // Create array of hull vertices
-    vec2[maxNumV]points;
-    for(int i=0;i<numV;i++){
-        points[i]=vec2(hullV[i*2],hullV[i*2+1]);
-    }
+    // color=texture(imageTexture,fragmentTexCoord);
+    color=vec4(0.,0.,0.,0.);
     
-    // Check whether the pixel is ocluded by a hull
     bool ocluded=false;
     for(int i=0;i<numV;i++){
-        vec2 p=points[i];
-        vec2 q=points[(i+1)%numV];
+        int ind1=i*2;
+        int ind2=((i+1)%numV)*2;
+        vec2 p=vec2(hullV[ind1],hullV[ind1+1]);
+        vec2 q=vec2(hullV[ind2],hullV[ind2+1]);
         if(isOcluded(p,q)){
             ocluded=true;
             break;
         }
     }
     
-    // Color the pixel according to occlusion
-    if(ocluded){
-        color=vec4(0.,0.,0.,0.);
-    }
-    else{
-        // MAYBE SUBTRACT ISTEAD OF ADD
+    if(!ocluded){
         vec2 diff=lightPos-fragmentTexCoord;
         float dist=diff.x*diff.x+diff.y*diff.y;
         float intensity=1./(decay*dist+1.);
-        color=lightCol*intensity*lightPower;
+        // TO REMOVE THE WEIRD CIRCLE AROUND LIGHT,
+        // MAYBE SUBTRACT ISTEAD OF ADD
+        color+=lightCol*intensity*lightPower;
     }
 }
