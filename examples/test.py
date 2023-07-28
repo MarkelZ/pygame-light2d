@@ -28,12 +28,11 @@ tex_puppy = lights_engine.load_texture('puppies2.png')
 
 # Create a point lights
 light1 = PointLight(position=(100, 100), power=1., decay=10.)
-light1.set_color(200, 100, 50, 255)
+light1.set_color(255, 160, 60, 255)
+light2 = PointLight(position=(550, 550), power=1., decay=10.)
 
-light2 = PointLight(position=(550, 550), power=.9, decay=10.)
-
-lights_engine.lights.append(light1)
 lights_engine.lights.append(light2)
+lights_engine.lights.append(light1)
 
 PI2 = pi/2
 PI3 = pi
@@ -80,7 +79,6 @@ while running:
     light2.set_color(r, g, b)
 
     lights_engine.clear(0, 0, 0)
-
     lights_engine.render_texture(
         tex_puppy, engine.BACKGROUND, pygame.Rect(0, 0, width, height), pygame.Rect(0, 0, tex_puppy.width, tex_puppy.height))
     lights_engine.render()

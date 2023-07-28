@@ -8,10 +8,15 @@ uniform sampler2D imageTexture;// used texture unit
 
 uniform vec2 lightPos;
 
-uniform vec2 p1;
-uniform vec2 p2;
-uniform vec2 p3;
-uniform vec2 p4;
+// uniform vec2 p1;
+// uniform vec2 p2;
+// uniform vec2 p3;
+// uniform vec2 p4;
+
+layout(binding=1)uniform hullSSBO{
+    float hullV[];
+};
+uniform int numV;
 
 uniform vec4 lightCol;
 uniform float lightPower;
@@ -42,8 +47,15 @@ void main()
     // color=texture(imageTexture,fragmentTexCoord);
     color=vec4(0.,0.,0.,0.);
     
+    // For testing
+    vec2 p1=vec2(hullV[0],hullV[1]);
+    vec2 p2=vec2(hullV[2],hullV[3]);
+    vec2 p3=vec2(hullV[4],hullV[5]);
+    vec2 p4=vec2(hullV[6],hullV[7]);
+    
     vec2[]points=vec2[](p1,p2,p3,p4);
-    int n=4;
+    int n=numV;
+    
     bool ocluded=false;
     for(int i=0;i<n;i++){
         vec2 p=points[i];

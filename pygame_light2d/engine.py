@@ -115,9 +115,13 @@ class LightingEngine:
         self.tex_ao.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self._fbo_ao = self.ctx.framebuffer([self.tex_ao])
 
+        # SSBO for hull vertices
+        self.ssbo = self.ctx.buffer(reserve=4*2048)
+        self.ssbo.bind_to_uniform_block(1)
+
     # TEMP
     def _point_to_coord(self, p):
-        return (p[0]/self.width, 1 - (p[1]/self.height))
+        return [p[0]/self.width, 1 - (p[1]/self.height)]
 
     def load_texture(self, path: str) -> moderngl.Texture:
         img = pygame.image.load(path).convert_alpha()
@@ -194,6 +198,15 @@ class LightingEngine:
         self._fbo_ao.clear(0, 0, 0, 0)
         self._fbo_lt.clear(0, 0, 0, 0)
 
+        vertices = []
+        # Create SSBO with hull vertices
+        for hull in self.hulls:
+            vertices += hull.vertices
+        vertices = [self._point_to_coord(v) for v in vertices]
+        nvertices = len(vertices)
+        data = np.array(vertices, dtype=np.float32).flatten().tobytes()
+        self.ssbo.write(data)
+
         # Send uniforms to light shader
         # TODO: point_to_coord should be GONE in the future!!
         for light in self.lights:
@@ -213,11 +226,15 @@ class LightingEngine:
 
             # TODO: Use SSBs for sending hull vertices
             # https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
-            hull = self.hulls[0]
-            self.prog_light['p1'] = self._point_to_coord(hull.vertices[0])
-            self.prog_light['p2'] = self._point_to_coord(hull.vertices[1])
-            self.prog_light['p3'] = self._point_to_coord(hull.vertices[2])
-            self.prog_light['p4'] = self._point_to_coord(hull.vertices[3])
+            # hull = self.hulls[0]
+            # self.prog_light['p1'] = self._point_to_coord(hull.vertices[0])
+            # self.prog_light['p2'] = self._point_to_coord(hull.vertices[1])
+            # self.prog_light['p3'] = self._point_to_coord(hull.vertices[2])
+            # self.prog_light['p4'] = self._point_to_coord(hull.vertices[3])
+
+            # hull uniforms
+            self.prog_light['hullSSBO'].binding = 1
+            self.prog_light['numV'] = nvertices
 
             # Render onto aomap
             self.vao_light.render()
