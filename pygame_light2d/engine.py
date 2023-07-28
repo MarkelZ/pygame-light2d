@@ -207,6 +207,7 @@ class LightingEngine:
         data = np.array(vertices, dtype=np.float32).flatten().tobytes()
         self.ssbo.write(data)
 
+        self.ctx.disable(moderngl.BLEND)
         # Send uniforms to light shader
         # TODO: point_to_coord should be GONE in the future!!
         for light in self.lights:
@@ -224,20 +225,13 @@ class LightingEngine:
             self.prog_light['lightPower'] = light.power
             self.prog_light['decay'] = light.decay
 
-            # TODO: Use SSBs for sending hull vertices
-            # https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
-            # hull = self.hulls[0]
-            # self.prog_light['p1'] = self._point_to_coord(hull.vertices[0])
-            # self.prog_light['p2'] = self._point_to_coord(hull.vertices[1])
-            # self.prog_light['p3'] = self._point_to_coord(hull.vertices[2])
-            # self.prog_light['p4'] = self._point_to_coord(hull.vertices[3])
-
             # hull uniforms
             self.prog_light['hullSSBO'].binding = 1
             self.prog_light['numV'] = nvertices
 
             # Render onto aomap
             self.vao_light.render()
+        self.ctx.enable(moderngl.BLEND)
 
         # Blur lightmap for soft shadows and render onto aomap
         self._fbo_ao.use()

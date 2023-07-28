@@ -44,9 +44,7 @@ bool isOcluded(vec2 p,vec2 q){
 
 void main()
 {
-    // color=texture(imageTexture,fragmentTexCoord);
-    color=vec4(0.,0.,0.,0.);
-    
+    // Check if ocluded by a hull
     bool ocluded=false;
     for(int i=0;i<numV;i++){
         int ind1=i*2;
@@ -59,12 +57,15 @@ void main()
         }
     }
     
+    // Brighten up if not ocluded
+    color=texture(imageTexture,fragmentTexCoord);
     if(!ocluded){
         vec2 diff=lightPos-fragmentTexCoord;
         float dist=diff.x*diff.x+diff.y*diff.y;
         float intensity=1./(decay*dist+1.);
-        // TO REMOVE THE WEIRD CIRCLE AROUND LIGHT,
-        // MAYBE SUBTRACT ISTEAD OF ADD
-        color+=lightCol*intensity*lightPower;
+        
+        vec4 lightVal=lightCol*intensity*lightPower;
+        float alpha=lightVal[3];
+        color+=vec4(lightVal.xyz*alpha,alpha);
     }
 }
