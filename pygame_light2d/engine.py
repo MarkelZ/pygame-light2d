@@ -116,11 +116,13 @@ class LightingEngine:
         self._fbo_ao = self.ctx.framebuffer([self.tex_ao])
 
         # SSBO for hull vertices
-        self.ssbo = self.ctx.buffer(reserve=4*2048)
-        self.ssbo.bind_to_uniform_block(1)
+        self.ssbo_v = self.ctx.buffer(reserve=4*2048)
+        self.ssbo_v.bind_to_uniform_block(1)
+        self.ssbo_i = self.ctx.buffer(reserve=4*256)
+        self.ssbo_i.bind_to_uniform_block(2)
 
     # TEMP
-    def _point_to_coord(self, p):
+    def _point_to_uv(self, p):
         return [p[0]/self.width, 1 - (p[1]/self.height)]
 
     def load_texture(self, path: str) -> moderngl.Texture:
@@ -198,14 +200,21 @@ class LightingEngine:
         self._fbo_ao.clear(0, 0, 0, 0)
         self._fbo_lt.clear(0, 0, 0, 0)
 
+        # SSBO with hull vertices and their indices
         vertices = []
-        # Create SSBO with hull vertices
+        indices = []
         for hull in self.hulls:
             vertices += hull.vertices
-        vertices = [self._point_to_coord(v) for v in vertices]
+            indices.append(len(vertices))
+
+        vertices = [self._point_to_uv(v) for v in vertices]
         nvertices = len(vertices)
-        data = np.array(vertices, dtype=np.float32).flatten().tobytes()
-        self.ssbo.write(data)
+        data_v = np.array(vertices, dtype=np.float32).flatten().tobytes()
+        self.ssbo_v.write(data_v)
+
+        nindices = len(indices)
+        data_i = np.array(indices, dtype=np.int32).flatten().tobytes()
+        self.ssbo_i.write(data_i)
 
         self.ctx.disable(moderngl.BLEND)
         # Send uniforms to light shader
@@ -217,17 +226,19 @@ class LightingEngine:
 
             # Use lightmap
             self._fbo_lt.use()
-            self.tex_lt.use()  # not really necessary, maybe to avoid scaling bugs
+            self.tex_lt.use()
 
             # Send light uniforms
-            self.prog_light['lightPos'] = self._point_to_coord(light.position)
+            self.prog_light['lightPos'] = self._point_to_uv(light.position)
             self.prog_light['lightCol'] = light._color
             self.prog_light['lightPower'] = light.power
             self.prog_light['decay'] = light.decay
 
             # hull uniforms
-            self.prog_light['hullSSBO'].binding = 1
-            self.prog_light['numV'] = nvertices
+            self.prog_light['hullVSSBO'].binding = 1
+            # self.prog_light['numV'] = nvertices
+            self.prog_light['hullIndSSBO'].binding = 2
+            self.prog_light['numInd'] = nindices
 
             # Render onto aomap
             self.vao_light.render()

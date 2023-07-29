@@ -13,10 +13,15 @@ uniform vec2 lightPos;
 // uniform vec2 p3;
 // uniform vec2 p4;
 
-layout(binding=1)uniform hullSSBO{
+layout(binding=1)uniform hullVSSBO{
     float hullV[2048];
 };
-uniform int numV;
+// uniform int numV;
+
+layout(binding=2)uniform hullIndSSBO{
+    int hullInd[256];
+};
+uniform int numInd;
 
 uniform vec4 lightCol;
 uniform float lightPower;
@@ -46,15 +51,22 @@ void main()
 {
     // Check if ocluded by a hull
     bool ocluded=false;
-    for(int i=0;i<numV;i++){
-        int ind1=i*2;
-        int ind2=((i+1)%numV)*2;
-        vec2 p=vec2(hullV[ind1],hullV[ind1+1]);
-        vec2 q=vec2(hullV[ind2],hullV[ind2+1]);
-        if(isOcluded(p,q)){
-            ocluded=true;
-            break;
+    int prev=0;
+    for(int i=0;i<numInd;i++){
+        int j0=prev;
+        int jn=hullInd[i];
+        int n=jn-j0;
+        for(int j=j0;j<jn;j++){
+            int ind1=j*2;
+            int ind2=(((j+1-j0)%n)+j0)*2;
+            vec2 p=vec2(hullV[ind1],hullV[ind1+1]);
+            vec2 q=vec2(hullV[ind2],hullV[ind2+1]);
+            if(isOcluded(p,q)){
+                ocluded=true;
+                break;
+            }
         }
+        prev=hullInd[i];
     }
     
     // Brighten up if not ocluded
