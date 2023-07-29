@@ -56,6 +56,8 @@ vertices = generate_hull_vertices((600, 300), 200, 0)
 hull1 = Hull(vertices)
 lights_engine.hulls.append(hull1)
 
+hull2 = Hull([[1000, 600], [1100, 786], [900, 786]])
+lights_engine.hulls.append(hull2)
 
 running = True
 t = 0
