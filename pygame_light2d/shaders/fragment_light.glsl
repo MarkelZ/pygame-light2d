@@ -25,7 +25,7 @@ uniform int numInd;
 
 uniform vec4 lightCol;
 uniform float lightPower;
-uniform float decay;
+uniform float radius;
 
 out vec4 color;
 
@@ -49,6 +49,15 @@ bool isOcluded(vec2 p,vec2 q){
 
 void main()
 {
+    color=texture(imageTexture,fragmentTexCoord);
+    
+    // Skip if fragment is too far away from light source
+    vec2 diff=lightPos-fragmentTexCoord;
+    float dist=sqrt(diff.x*diff.x+diff.y*diff.y);
+    if(dist>=radius){
+        return;
+    }
+    
     // Check if ocluded by a hull
     bool ocluded=false;
     int prev=0;
@@ -70,12 +79,14 @@ void main()
     }
     
     // Brighten up if not ocluded
-    color=texture(imageTexture,fragmentTexCoord);
     if(!ocluded){
-        vec2 diff=lightPos-fragmentTexCoord;
-        float dist=diff.x*diff.x+diff.y*diff.y;
-        float intensity=1./(decay*dist+1.);
+        // Cubic spline for light intensity
+        float a=2/(radius*radius*radius);
+        float b=-3/(radius*radius);
+        float intensity=a*dist*dist*dist+b*dist*dist+1;
+        intensity=sqrt(intensity);
         
+        // Blend light color
         vec4 lightVal=lightCol*intensity*lightPower;
         float alpha=lightVal[3];
         color+=vec4(lightVal.xyz*alpha,alpha);

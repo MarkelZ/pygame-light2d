@@ -125,6 +125,9 @@ class LightingEngine:
     def _point_to_uv(self, p):
         return [p[0]/self.width, 1 - (p[1]/self.height)]
 
+    def _length_to_uv(self, l):
+        return l/self.width
+
     def load_texture(self, path: str) -> moderngl.Texture:
         img = pygame.image.load(path).convert_alpha()
         img_flip = pygame.transform.flip(img, False, True)
@@ -232,7 +235,7 @@ class LightingEngine:
             self.prog_light['lightPos'] = self._point_to_uv(light.position)
             self.prog_light['lightCol'] = light._color
             self.prog_light['lightPower'] = light.power
-            self.prog_light['decay'] = light.decay
+            self.prog_light['radius'] = self._length_to_uv(light.radius)
 
             # hull uniforms
             self.prog_light['hullVSSBO'].binding = 1

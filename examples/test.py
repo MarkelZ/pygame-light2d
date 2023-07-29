@@ -2,6 +2,7 @@
 import pygame
 import time
 from math import sin, cos, pi
+import random
 
 # My stuff
 import engine
@@ -27,12 +28,14 @@ lights_engine = engine.LightingEngine(width, height)
 tex_puppy = lights_engine.load_texture('puppies2.png')
 
 # Create a point lights
-light1 = PointLight(position=(100, 100), power=1., decay=10.)
-light1.set_color(255, 160, 60, 255)
-light2 = PointLight(position=(550, 550), power=1., decay=10.)
+lightrad = 700
+light1 = PointLight(position=(100, 100), power=1., radius=lightrad)
+light1.set_color(random.randint(0, 255), random.randint(
+    0, 255), random.randint(0, 255), 255)
+light2 = PointLight(position=(550, 550), power=1., radius=lightrad)
 
-lights_engine.lights.append(light2)
 lights_engine.lights.append(light1)
+lights_engine.lights.append(light2)
 
 PI2 = pi/2
 PI3 = pi
@@ -91,6 +94,11 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            light1 = PointLight(position=(100, 100), power=1., radius=lightrad)
+            light1.set_color(random.randint(0, 255), random.randint(
+                0, 255), random.randint(0, 255), 255)
+            lights_engine.lights.append(light1)
 
     # Display mspt and fps
     pygame.display.set_caption(

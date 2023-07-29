@@ -1,9 +1,9 @@
 
 class PointLight:
-    def __init__(self, position, power=1., decay=10., enabled=True) -> None:
+    def __init__(self, position, power=1., radius=10., enabled=True) -> None:
         self.position = position
         self.power = power
-        self.decay = decay
+        self.radius = radius
         self.enabled = True
         self._color = [.5 for _ in range(3)] + [1.]
 
