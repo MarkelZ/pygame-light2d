@@ -101,19 +101,19 @@ class LightingEngine:
         self._tex_bg.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self._fbo_bg = self.ctx.framebuffer([self._tex_bg])
 
-        self.tex_fg = self.ctx.texture((width, height), components=4)
-        self.tex_fg.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        self._fbo_fg = self.ctx.framebuffer([self.tex_fg])
+        self._tex_fg = self.ctx.texture((width, height), components=4)
+        self._tex_fg.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self._fbo_fg = self.ctx.framebuffer([self._tex_fg])
 
-        self.tex_lt = self.ctx.texture((width, height), components=4)
-        self.tex_lt.filter = (moderngl.LINEAR, moderngl.LINEAR)
-        self._fbo_lt = self.ctx.framebuffer([self.tex_lt])
+        self._tex_lt = self.ctx.texture((width, height), components=4)
+        self._tex_lt.filter = (moderngl.LINEAR, moderngl.LINEAR)
+        self._fbo_lt = self.ctx.framebuffer([self._tex_lt])
         # downscale for free AA
 
         # Ambient occlussion map
-        self.tex_ao = self.ctx.texture((width, height), components=4)
-        self.tex_ao.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        self._fbo_ao = self.ctx.framebuffer([self.tex_ao])
+        self._tex_ao = self.ctx.texture((width, height), components=4)
+        self._tex_ao.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self._fbo_ao = self.ctx.framebuffer([self._tex_ao])
 
         # SSBO for hull vertices
         self.ssbo_v = self.ctx.buffer(reserve=4*2048)
@@ -127,16 +127,6 @@ class LightingEngine:
 
     def _length_to_uv(self, l):
         return l/self.width
-
-    def load_texture(self, path: str) -> moderngl.Texture:
-        img = pygame.image.load(path).convert_alpha()
-        img_flip = pygame.transform.flip(img, False, True)
-        img_data = pygame.image.tostring(img_flip, 'RGBA')
-
-        tex = self.ctx.texture(size=img.get_size(),
-                               components=4, data=img_data)
-        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        return tex
 
     def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
         # Create a framebuffer with the texture
@@ -153,6 +143,15 @@ class LightingEngine:
                                dest.x, dest.y, dest.w, dest.h, GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
     def render_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
+        # Render texture onto layer with the draw shader
+        if layer == Layer.BACKGROUND:
+            fbo = self._fbo_bg
+        elif layer == Layer.FOREGROUND:
+            fbo = self._fbo_fg
+
+        self._render_tex_to_fbo(tex, fbo, dest, source)
+
+    def _render_tex_to_fbo(self, tex: moderngl.Texture, fbo: moderngl.Framebuffer, dest: pygame.Rect, source: pygame.Rect):
         # Mesh for destination rect on screen
         width, height = self.ctx.screen.size
         x = 2. * dest.x / width - 1.
@@ -183,12 +182,7 @@ class LightingEngine:
             (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
 
-        # Render texture onto layer with the draw shader
-        if layer == Layer.BACKGROUND:
-            fbo = self._fbo_bg
-        elif layer == Layer.FOREGROUND:
-            fbo = self._fbo_fg
-
+        # Use buffers and render
         tex.use()
         fbo.use()
         vao.render()
@@ -196,10 +190,10 @@ class LightingEngine:
     # Clear background
     def clear(self, R=0, G=0, B=0, A=1):
         self._fbo_bg.clear(R, G, B, A)
+        self._fbo_fg.clear(0, 0, 0, 0)
 
     def render(self):
         # Clear intermediate buffers
-        self._fbo_fg.clear(0, 0, 0, 0)
         self._fbo_ao.clear(0, 0, 0, 0)
         self._fbo_lt.clear(0, 0, 0, 0)
 
@@ -210,18 +204,18 @@ class LightingEngine:
             vertices += hull.vertices
             indices.append(len(vertices))
 
+        # Store hull vertex data in SSBO
         vertices = [self._point_to_uv(v) for v in vertices]
-        nvertices = len(vertices)
         data_v = np.array(vertices, dtype=np.float32).flatten().tobytes()
         self.ssbo_v.write(data_v)
 
+        # Store hull vertex indices in SSBO
         nindices = len(indices)
         data_i = np.array(indices, dtype=np.int32).flatten().tobytes()
         self.ssbo_i.write(data_i)
 
         self.ctx.disable(moderngl.BLEND)
         # Send uniforms to light shader
-        # TODO: point_to_coord should be GONE in the future!!
         for light in self.lights:
             # Skip light if disabled
             if not light.enabled:
@@ -229,7 +223,7 @@ class LightingEngine:
 
             # Use lightmap
             self._fbo_lt.use()
-            self.tex_lt.use()
+            self._tex_lt.use()
 
             # Send light uniforms
             self.prog_light['lightPos'] = self._point_to_uv(light.position)
@@ -237,10 +231,7 @@ class LightingEngine:
             self.prog_light['lightPower'] = light.power
             self.prog_light['radius'] = self._length_to_uv(light.radius)
 
-            # hull uniforms
-            self.prog_light['hullVSSBO'].binding = 1
-            # self.prog_light['numV'] = nvertices
-            self.prog_light['hullIndSSBO'].binding = 2
+            # Send number of hulls
             self.prog_light['numInd'] = nindices
 
             # Render onto aomap
@@ -249,22 +240,44 @@ class LightingEngine:
 
         # Blur lightmap for soft shadows and render onto aomap
         self._fbo_ao.use()
-        self.tex_lt.use()
-        # self.prog_blur['lightPos'] = self._point_to_coord(light.position)
+        self._tex_lt.use()
         self.vao_blur.render()
 
         # Render background masked with the lightmap
         self.ctx.screen.use()
         self._tex_bg.use()
 
-        self.tex_ao.use(1)
+        self._tex_ao.use(1)
         self.prog_mask['lightmap'].value = 1
 
         self.vao_mask.render()
 
+        # Render foreground
+        self._render_tex_to_fbo(self._tex_fg, self.ctx.screen, pygame.Rect(0, 0, self.width, self.height),
+                                pygame.Rect(0, 0, self._tex_fg.width, self._tex_fg.height))
+
     def surface_to_texture(self, sfc: pygame.Surface):
-        tex = self.ctx.texture(sfc.get_size(), 4)
+        # tex = self.ctx.texture(sfc.get_size(), 4)
+        # tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        # tex.swizzle = 'BGRA'
+        # tex.write(sfc.get_view('1'))
+        # return tex
+
+        img_flip = pygame.transform.flip(sfc, False, True)
+        img_data = pygame.image.tostring(img_flip, "RGBA")
+
+        tex = self.ctx.texture(sfc.get_size(), components=4, data=img_data)
         tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        tex.swizzle = 'BGRA'
-        tex.write(sfc.get_view('1'))
         return tex
+
+    def load_texture(self, path: str) -> moderngl.Texture:
+        img = pygame.image.load(path).convert_alpha()
+        return self.surface_to_texture(img)
+
+        # img_flip = pygame.transform.flip(img, False, True)
+        # img_data = pygame.image.tostring(img_flip, 'RGBA')
+
+        # tex = self.ctx.texture(size=img.get_size(),
+        #                        components=4, data=img_data)
+        # tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        # return tex

@@ -62,6 +62,9 @@ lights_engine.hulls.append(hull1)
 hull2 = Hull([[1000, 600], [1100, 786], [900, 786]])
 lights_engine.hulls.append(hull2)
 
+# Create a font
+font = pygame.font.Font(size=64)
+
 running = True
 t = 0
 mspt = 0
@@ -83,9 +86,27 @@ while running:
     r, g, b = sin(t)*255, sin(t+1)*255, sin(t + 2)*255
     light2.set_color(r, g, b)
 
+    # Clear the background with black
     lights_engine.clear(0, 0, 0)
+
+    # Draw puppies on the background
     lights_engine.render_texture(
         tex_puppy, engine.BACKGROUND, pygame.Rect(0, 0, width, height), pygame.Rect(0, 0, tex_puppy.width, tex_puppy.height))
+
+    # Display some text in the foreground
+    text_sfc = font.render('mspt: ' + f'{mspt:.2f}', True,
+                           (255, 255, 255, 255), (0, 0, 0, 0))
+    text_tex = lights_engine.surface_to_texture(text_sfc)
+    text_rect = pygame.Rect(0, 0, text_sfc.get_width(),
+                            text_sfc.get_height())
+    lights_engine.render_texture(
+        text_tex, engine.FOREGROUND, text_rect, text_rect)
+    lights_engine.render_texture(tex_puppy, engine.FOREGROUND,
+                                 pygame.Rect(0, text_rect.height,
+                                             300, 300*tex_puppy.height/tex_puppy.width),
+                                 pygame.Rect(0, 0, tex_puppy.width, tex_puppy.height))
+
+    # Render the lights
     lights_engine.render()
 
     pygame.display.flip()
