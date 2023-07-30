@@ -4,7 +4,7 @@ class PointLight:
         self.position = position
         self.power = power
         self.radius = radius
-        self.enabled = True
+        self.enabled = enabled
         self._color = [.5 for _ in range(3)] + [1.]
 
     def set_color(self, R: int, G: int, B: int, A: int = 255):

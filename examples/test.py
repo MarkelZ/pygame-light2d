@@ -22,7 +22,8 @@ screen = pygame.display.set_mode((width, height))
 clock = pygame.time.Clock()
 
 # Create lights engine
-lights_engine = engine.LightingEngine(width, height)
+lights_engine = engine.LightingEngine(
+    (320, 144), (width, height))
 
 # Background image
 tex_puppy = lights_engine.load_texture('puppies2.png')
