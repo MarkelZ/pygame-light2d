@@ -38,6 +38,9 @@ bool isOcluded(vec2 p,vec2 q){
     float lengthV2=length(v2);
     float t=(v2.x*(p.y-fragmentTexCoord.y)+v2.y*(fragmentTexCoord.x-p.x))/crossProduct;
     vec2 intersection=p+t*v1;
+    if(crossProduct==0.){
+        return false;
+    }
     if(distance(p,intersection)>lengthV1||distance(q,intersection)>lengthV1){
         return false;// The intersection point is not between p and q
     }
@@ -84,11 +87,14 @@ void main()
         float a=2/(radius*radius*radius);
         float b=-3/(radius*radius);
         float intensity=a*dist*dist*dist+b*dist*dist+1;
-        intensity=sqrt(intensity);
+        // intensity=sqrt(intensity);
         
         // Blend light color
         vec4 lightVal=lightCol*intensity*lightPower;
         float alpha=lightVal[3];
         color+=vec4(lightVal.xyz*alpha,alpha);
+        // color+=vec4(1.,0.,1.,1.)+.0000001*lightCol*lightPower;
     }
+    
+    // color+=vec4(1.,0.,1.,1.)+.0000001*lightCol*lightPower;
 }

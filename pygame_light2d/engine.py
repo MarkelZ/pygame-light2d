@@ -109,9 +109,14 @@ class LightingEngine:
         self._tex_fg.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self._fbo_fg = self.ctx.framebuffer([self._tex_fg])
 
-        self._tex_lt = self.ctx.texture(lightmap_res, components=4)
-        self._tex_lt.filter = (moderngl.LINEAR, moderngl.LINEAR)
-        self._fbo_lt = self.ctx.framebuffer([self._tex_lt])
+        # Double buffer for lights
+        self._tex_lt1 = self.ctx.texture(lightmap_res, components=4)
+        self._tex_lt1.filter = (moderngl.LINEAR, moderngl.LINEAR)
+        self._fbo_lt1 = self.ctx.framebuffer([self._tex_lt1])
+
+        self._tex_lt2 = self.ctx.texture(lightmap_res, components=4)
+        self._tex_lt2.filter = (moderngl.LINEAR, moderngl.LINEAR)
+        self._fbo_lt2 = self.ctx.framebuffer([self._tex_lt2])
 
         # Ambient occlussion map
         self._tex_ao = self.ctx.texture(lightmap_res, components=4)
@@ -126,10 +131,11 @@ class LightingEngine:
 
     # TEMP
     def _point_to_uv(self, p):
+        # Should be native res
         return [p[0]/self.screen_width, 1 - (p[1]/self.screen_height)]
 
     def _length_to_uv(self, l):
-        return l/self.screen_width
+        return l/self.screen_width  # Should be native res
 
     def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
         # Create a framebuffer with the texture
@@ -198,7 +204,8 @@ class LightingEngine:
     def render(self):
         # Clear intermediate buffers
         self._fbo_ao.clear(0, 0, 0, 0)
-        self._fbo_lt.clear(0, 0, 0, 0)
+        self._fbo_lt1.clear(0, 0, 0, 0)
+        self._fbo_lt2.clear(0, 0, 0, 0)
 
         # SSBO with hull vertices and their indices
         vertices = []
@@ -217,16 +224,23 @@ class LightingEngine:
         data_i = np.array(indices, dtype=np.int32).flatten().tobytes()
         self.ssbo_i.write(data_i)
 
+        fbo_ind = 1
+
         self.ctx.disable(moderngl.BLEND)
-        # Send uniforms to light shader
         for light in self.lights:
             # Skip light if disabled
             if not light.enabled:
                 continue
 
-            # Use lightmap
-            self._fbo_lt.use()
-            self._tex_lt.use()
+            # Flip double buff
+            if fbo_ind == 1:
+                self._fbo_lt1.use()
+                self._tex_lt2.use()
+                fbo_ind = 2
+            elif fbo_ind == 2:
+                self._fbo_lt2.use()
+                self._tex_lt1.use()
+                fbo_ind = 1
 
             # Send light uniforms
             self.prog_light['lightPos'] = self._point_to_uv(light.position)
@@ -237,13 +251,16 @@ class LightingEngine:
             # Send number of hulls
             self.prog_light['numInd'] = nindices
 
-            # Render onto aomap
+            # Render onto lightmap
             self.vao_light.render()
         self.ctx.enable(moderngl.BLEND)
 
         # Blur lightmap for soft shadows and render onto aomap
         self._fbo_ao.use()
-        self._tex_lt.use()
+        if fbo_ind == 1:
+            self._tex_lt2.use()
+        else:
+            self._tex_lt1.use()
         self.vao_blur.render()
 
         # Render background masked with the lightmap
