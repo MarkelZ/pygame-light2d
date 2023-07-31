@@ -3,25 +3,16 @@
 in vec2 fragmentTexCoord;// top-left is [0, 1] and bottom-right is [1, 0]
 uniform sampler2D imageTexture;// used texture unit
 
-// uniform width;
-// uniform height;
-
 uniform vec2 lightPos;
-
-// uniform vec2 p1;
-// uniform vec2 p2;
-// uniform vec2 p3;
-// uniform vec2 p4;
 
 layout(binding=1)uniform hullVSSBO{
     float hullV[2048];
 };
-// uniform int numV;
 
 layout(binding=2)uniform hullIndSSBO{
     int hullInd[256];
 };
-uniform int numInd;
+uniform int numHulls;
 
 uniform vec4 lightCol;
 uniform float lightPower;
@@ -64,7 +55,7 @@ void main()
     // Check if ocluded by a hull
     bool ocluded=false;
     int prev=0;
-    for(int i=0;i<numInd;i++){
+    for(int i=0;i<numHulls;i++){
         int j0=prev;
         int jn=hullInd[i];
         int n=jn-j0;
@@ -93,8 +84,6 @@ void main()
         vec4 lightVal=lightCol*intensity*lightPower;
         float alpha=lightVal[3];
         color+=vec4(lightVal.xyz*alpha,alpha);
-        // color+=vec4(1.,0.,1.,1.)+.0000001*lightCol*lightPower;
     }
     
-    // color+=vec4(1.,0.,1.,1.)+.0000001*lightCol*lightPower;
 }

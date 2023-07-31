@@ -23,7 +23,8 @@ clock = pygame.time.Clock()
 
 # Create lights engine
 lights_engine = engine.LightingEngine(
-    (320, 144), (width, height))
+    # (width, height), (width//8, height//8))
+    (width, height), (int(width/2.5), int(height/2.5)))
 
 # Background image
 tex_puppy = lights_engine.load_texture('puppies2.png')
@@ -36,7 +37,7 @@ light1.set_color(random.randint(0, 255), random.randint(
 light2 = PointLight(position=(550, 550), power=1., radius=lightrad)
 
 lights_engine.lights.append(light1)
-lights_engine.lights.append(light2)
+# lights_engine.lights.append(light2)
 
 PI2 = pi/2
 PI3 = pi
@@ -95,7 +96,7 @@ while running:
         tex_puppy, engine.BACKGROUND, pygame.Rect(0, 0, width, height), pygame.Rect(0, 0, tex_puppy.width, tex_puppy.height))
 
     # Display some text in the foreground
-    text_sfc = font.render('mspt: ' + f'{mspt:.2f}', True,
+    text_sfc = font.render('light count: ' + str(len(lights_engine.lights)), True,
                            (255, 255, 255, 255), (0, 0, 0, 0))
     text_tex = lights_engine.surface_to_texture(text_sfc)
     text_rect = pygame.Rect(0, 0, text_sfc.get_width(),

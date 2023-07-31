@@ -126,8 +126,8 @@ class LightingEngine:
         # SSBO for hull vertices
         self.ssbo_v = self.ctx.buffer(reserve=4*2048)
         self.ssbo_v.bind_to_uniform_block(1)
-        self.ssbo_i = self.ctx.buffer(reserve=4*256)
-        self.ssbo_i.bind_to_uniform_block(2)
+        self.ssbo_ind = self.ctx.buffer(reserve=4*256)
+        self.ssbo_ind.bind_to_uniform_block(2)
 
     # TEMP
     def _point_to_uv(self, p):
@@ -220,9 +220,9 @@ class LightingEngine:
         self.ssbo_v.write(data_v)
 
         # Store hull vertex indices in SSBO
-        nindices = len(indices)
-        data_i = np.array(indices, dtype=np.int32).flatten().tobytes()
-        self.ssbo_i.write(data_i)
+        num_hulls = len(indices)
+        data_ind = np.array(indices, dtype=np.int32).flatten().tobytes()
+        self.ssbo_ind.write(data_ind)
 
         fbo_ind = 1
 
@@ -249,7 +249,7 @@ class LightingEngine:
             self.prog_light['radius'] = self._length_to_uv(light.radius)
 
             # Send number of hulls
-            self.prog_light['numInd'] = nindices
+            self.prog_light['numHulls'] = num_hulls
 
             # Render onto lightmap
             self.vao_light.render()
