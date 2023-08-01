@@ -8,8 +8,10 @@ uniform sampler2D imageTexture;// used texture unit
 
 uniform sampler2D lightmap;
 
-const vec4 ambient=vec4(.2);
+// const vec4 ambient=vec4(.2);
 // const vec4 ambient=vec4(0.,0.,0.,.2);
+
+uniform vec4 ambient;
 
 out vec4 color;
 

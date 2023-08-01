@@ -34,7 +34,7 @@ class LightingEngine:
         self.screen_width, self.screen_height = screen_size
 
         # Ambient light
-        self.ambient = (0., 0., 0., .5)
+        self.ambient = (.25, .25, .25, .25)
 
         # Light and hull lists
         self.lights: list[PointLight] = []
@@ -274,6 +274,7 @@ class LightingEngine:
 
         self._tex_ao.use(1)
         self.prog_mask['lightmap'].value = 1
+        self.prog_mask['ambient'].value = self.ambient
 
         self.vao_mask.render()
 
