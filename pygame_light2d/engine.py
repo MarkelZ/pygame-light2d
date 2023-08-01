@@ -3,6 +3,8 @@ import pygame
 import numpy as np
 from enum import Enum
 from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST
+# from OpenGL.GL import *
+# from OpenGL.GLU import *
 
 from light import PointLight
 from hull import Hull
@@ -110,16 +112,19 @@ class LightingEngine:
         self._fbo_fg = self.ctx.framebuffer([self._tex_fg])
 
         # Double buffer for lights
-        self._tex_lt1 = self.ctx.texture(lightmap_res, components=4)
+        self._tex_lt1 = self.ctx.texture(
+            lightmap_res, components=4, dtype='f2')
         self._tex_lt1.filter = (moderngl.LINEAR, moderngl.LINEAR)
         self._fbo_lt1 = self.ctx.framebuffer([self._tex_lt1])
 
-        self._tex_lt2 = self.ctx.texture(lightmap_res, components=4)
+        self._tex_lt2 = self.ctx.texture(
+            lightmap_res, components=4, dtype='f2')
         self._tex_lt2.filter = (moderngl.LINEAR, moderngl.LINEAR)
         self._fbo_lt2 = self.ctx.framebuffer([self._tex_lt2])
 
         # Ambient occlussion map
-        self._tex_ao = self.ctx.texture(lightmap_res, components=4)
+        self._tex_ao = self.ctx.texture(
+            lightmap_res, components=4, dtype='f2')
         self._tex_ao.filter = (moderngl.LINEAR, moderngl.LINEAR)
         self._fbo_ao = self.ctx.framebuffer([self._tex_ao])
 
