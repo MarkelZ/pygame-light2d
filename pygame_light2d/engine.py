@@ -137,11 +137,11 @@ class LightingEngine:
         self.ssbo_ind.bind_to_uniform_block(2)
 
     # TEMP
-    def _point_to_uv(self, p: tuple[float, float], res: tuple[int, int]):
-        return [p[0]/res[0], 1 - (p[1]/res[1])]
+    def _point_to_uv(self, p: tuple[float, float]):
+        return [p[0]/self.native_res[0], 1 - (p[1]/self.native_res[1])]
 
-    def _length_to_uv(self, l: float, res: tuple[int, int]):
-        return l/res[0]
+    def _length_to_uv(self, l: float):
+        return l/self.native_res[0]
 
     def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
         # Create a framebuffer with the texture
@@ -221,7 +221,7 @@ class LightingEngine:
             indices.append(len(vertices))
 
         # Store hull vertex data in SSBO
-        vertices = [self._point_to_uv(v, self.lightmap_res) for v in vertices]
+        vertices = [self._point_to_uv(v) for v in vertices]
         data_v = np.array(vertices, dtype=np.float32).flatten().tobytes()
         self.ssbo_v.write(data_v)
 
@@ -249,12 +249,10 @@ class LightingEngine:
                 fbo_ind = 1
 
             # Send light uniforms
-            self.prog_light['lightPos'] = self._point_to_uv(
-                light.position, self.lightmap_res)
+            self.prog_light['lightPos'] = self._point_to_uv(light.position)
             self.prog_light['lightCol'] = light._color
             self.prog_light['lightPower'] = light.power
-            self.prog_light['radius'] = self._length_to_uv(
-                light.radius, self.lightmap_res)
+            self.prog_light['radius'] = self._length_to_uv(light.radius)
 
             # Send number of hulls
             self.prog_light['numHulls'] = num_hulls
