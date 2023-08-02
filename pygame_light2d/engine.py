@@ -25,18 +25,20 @@ class LightingEngine:
         # Check that pygame has been initialized
         assert pygame.get_init(), 'Please, initialize Pygame before the lighting engine.'
 
-        # Screen resolution
+        # Try to get the current screen resolution
         try:
             screen_size = pygame.display.get_window_size()
         except:
             assert False, 'Please, initialize a pygame window before starting the lighting engine.'
 
-        self.screen_width, self.screen_height = screen_size
+        # Set the native and lightmap resolutions
+        self.native_res = native_res
+        self.lightmap_res = lightmap_res
 
-        # Ambient light
+        # Set the ambient light
         self.ambient = (.25, .25, .25, .25)
 
-        # Light and hull lists
+        # Initialize the light and hull lists
         self.lights: list[PointLight] = []
         self.hulls: list[Hull] = []
 
@@ -135,12 +137,11 @@ class LightingEngine:
         self.ssbo_ind.bind_to_uniform_block(2)
 
     # TEMP
-    def _point_to_uv(self, p):
-        # Should be native res
-        return [p[0]/self.screen_width, 1 - (p[1]/self.screen_height)]
+    def _point_to_uv(self, p: tuple[float, float], res: tuple[int, int]):
+        return [p[0]/res[0], 1 - (p[1]/res[1])]
 
-    def _length_to_uv(self, l):
-        return l/self.screen_width  # Should be native res
+    def _length_to_uv(self, l: float, res: tuple[int, int]):
+        return l/res[0]
 
     def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
         # Create a framebuffer with the texture
@@ -167,7 +168,7 @@ class LightingEngine:
 
     def _render_tex_to_fbo(self, tex: moderngl.Texture, fbo: moderngl.Framebuffer, dest: pygame.Rect, source: pygame.Rect):
         # Mesh for destination rect on screen
-        width, height = self.ctx.screen.size
+        width, height = fbo.size
         x = 2. * dest.x / width - 1.
         y = 1. - 2. * dest.y / height
         w = 2. * dest.w / width
@@ -220,7 +221,7 @@ class LightingEngine:
             indices.append(len(vertices))
 
         # Store hull vertex data in SSBO
-        vertices = [self._point_to_uv(v) for v in vertices]
+        vertices = [self._point_to_uv(v, self.lightmap_res) for v in vertices]
         data_v = np.array(vertices, dtype=np.float32).flatten().tobytes()
         self.ssbo_v.write(data_v)
 
@@ -248,10 +249,12 @@ class LightingEngine:
                 fbo_ind = 1
 
             # Send light uniforms
-            self.prog_light['lightPos'] = self._point_to_uv(light.position)
+            self.prog_light['lightPos'] = self._point_to_uv(
+                light.position, self.lightmap_res)
             self.prog_light['lightCol'] = light._color
             self.prog_light['lightPower'] = light.power
-            self.prog_light['radius'] = self._length_to_uv(light.radius)
+            self.prog_light['radius'] = self._length_to_uv(
+                light.radius, self.lightmap_res)
 
             # Send number of hulls
             self.prog_light['numHulls'] = num_hulls
@@ -279,7 +282,9 @@ class LightingEngine:
         self.vao_mask.render()
 
         # Render foreground onto screen
-        self._render_tex_to_fbo(self._tex_fg, self.ctx.screen, pygame.Rect(0, 0, self.screen_width, self.screen_height),
+        self._render_tex_to_fbo(self._tex_fg, self.ctx.screen,
+                                pygame.Rect(0, 0, self.ctx.screen.width,
+                                            self.ctx.screen.height),
                                 pygame.Rect(0, 0, self._tex_fg.width, self._tex_fg.height))
 
     def surface_to_texture(self, sfc: pygame.Surface):
