@@ -25,17 +25,32 @@ clock = pygame.time.Clock()
 lights_engine = engine.LightingEngine(
     native_res=screen_res, lightmap_res=(int(screen_width/2.5), int(screen_height/2.5)))
 
+# Set the ambient light
+lights_engine.ambient = [0.3 for _ in range(4)]
+
 # Load the background image
 tex_background = lights_engine.load_texture('assets/puppies2.png')
 
+
+# Generate a random color
+def random_color():
+    theta = random.random()*pi
+    theta2 = theta + pi/3
+    theta2 = theta2 if theta2 < pi else theta2 - pi
+    theta3 = theta2 + pi/3
+    theta3 = theta3 if theta3 < pi else theta3 - pi
+    sc = 200.
+    return sc*sin(theta), sc*sin(theta2), sc*sin(theta3), 255.
+
+
 # Create a point light
 light_radius = 900
-light = PointLight(position=(100, 100), power=1., radius=light_radius)
+light_pow = 1.0
+light = PointLight(position=(100, 100), power=light_pow, radius=light_radius)
 
 # Assign a random color to the light
-light.set_color(random.randint(0, 255),
-                random.randint(0, 255),
-                random.randint(0, 255))
+r, g, b, a = random_color()
+light.set_color(r, g, b, a)
 
 # Add the point light to the engine
 lights_engine.lights.append(light)
@@ -125,15 +140,19 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             # Create a new light
             light = PointLight(position=(100, 100),
                                power=1., radius=light_radius)
             # Assign a random color to the new light
-            light.set_color(random.randint(0, 255),
-                            random.randint(0, 255),
-                            random.randint(0, 255))
+            r, g, b, a = random_color()
+            light.set_color(r, g, b, a)
+
             # Add the new light to the engine
+            lights_engine.lights.append(light)
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_c:
+            # Remove all lights except for the mouse pointer
+            lights_engine.lights.clear()
             lights_engine.lights.append(light)
 
     # Measure the time and compute milliseconds per tick (mspt)

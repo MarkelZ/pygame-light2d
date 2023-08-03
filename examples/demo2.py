@@ -31,7 +31,7 @@ lights_engine = engine.LightingEngine(
     native_res=native_res, lightmap_res=native_res)
 
 # Set the ambient light
-lights_engine.ambient = [.3 for _ in range(4)]
+lights_engine.ambient = [0.5 for _ in range(4)]
 
 # Load the background image
 tex_background = lights_engine.load_texture('assets/backg.png')
@@ -44,12 +44,14 @@ def random_color():
     theta2 = theta2 if theta2 < pi else theta2 - pi
     theta3 = theta2 + pi/3
     theta3 = theta3 if theta3 < pi else theta3 - pi
-    return 255.*sin(theta), 255.*sin(theta2), 255.*sin(theta3), 255.
+    sc = 200.
+    return sc*sin(theta), sc*sin(theta2), sc*sin(theta3), 255.
 
 
 # Create a point light
 light_radius = 200
-light = PointLight(position=(100, 100), power=1., radius=light_radius)
+light_pow = 1.2
+light = PointLight(position=(0, 0), power=light_pow, radius=light_radius)
 
 # Assign a random color to the light
 r, g, b, a = random_color()
@@ -122,8 +124,8 @@ while running:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             # Create a new light
-            light = PointLight(position=(100, 100),
-                               power=1., radius=light_radius)
+            light = PointLight(position=(0, 0),
+                               power=light_pow, radius=light_radius)
 
             # Assign a random color to the new light
             r, g, b, a = random_color()

@@ -209,6 +209,7 @@ class LightingEngine:
 
     def render(self):
         # Clear intermediate buffers
+        self.ctx.screen.clear(0, 0, 0, 1)
         self._fbo_ao.clear(0, 0, 0, 0)
         self._fbo_lt1.clear(0, 0, 0, 0)
         self._fbo_lt2.clear(0, 0, 0, 0)
