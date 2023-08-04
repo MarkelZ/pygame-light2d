@@ -159,8 +159,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 pygame_light2d/test.py
-pygame_light2d/demo1.py
-pygame_light2d/demo2.py
+pygame_light2d/demo*
 pygame_light2d/assets/*
 TODO.md
 game_example/*
