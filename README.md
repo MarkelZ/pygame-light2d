@@ -1,6 +1,8 @@
 # Pygame Light 2D
 This module provides fast 2D dynamic lighting for `pygame`. 
 
+https://raw.githubusercontent.com/MarkelZ/pygame-light2d/main/demo.mp4
+
 ## Dependencies
 
 - `Python` version >= 3.10
