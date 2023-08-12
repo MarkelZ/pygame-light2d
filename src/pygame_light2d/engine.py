@@ -1,22 +1,17 @@
+from importlib import resources
+from enum import Enum
+import numpy as np
 import moderngl
 import pygame
-import numpy as np
-from enum import Enum
 from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST
-# from OpenGL.GL import *
-# from OpenGL.GLU import *
 
-from light import PointLight
-from hull import Hull
+from pygame_light2d.light import PointLight
+from pygame_light2d.hull import Hull
 
 
 class Layer(Enum):
     BACKGROUND = 1,
     FOREGROUND = 2,
-
-
-BACKGROUND = Layer.BACKGROUND
-FOREGROUND = Layer.FOREGROUND
 
 
 class LightingEngine:
@@ -52,26 +47,16 @@ class LightingEngine:
         self.ctx.blend_func = self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA
 
         # Load shaders
-        vertex_filepath = 'shaders/vertex.glsl'
-        fragment_filepath_light = 'shaders/fragment_light.glsl'
-        fragment_filepath_blur = 'shaders/fragment_blur.glsl'
-        fragment_filepath_mask = 'shaders/fragment_mask.glsl'
-        fragment_filepath_draw = 'shaders/fragment_draw.glsl'
-
-        with open(vertex_filepath, 'r') as f:
-            vertex_src = f.read()
-
-        with open(fragment_filepath_light, 'r') as f:
-            fragment_src_light = f.read()
-
-        with open(fragment_filepath_blur, 'r') as f:
-            fragment_src_blur = f.read()
-
-        with open(fragment_filepath_mask, 'r') as f:
-            fragment_src_mask = f.read()
-
-        with open(fragment_filepath_draw, 'r') as f:
-            fragment_src_draw = f.read()
+        vertex_src = resources.read_text(
+            'pygame_light2d', 'vertex.glsl')
+        fragment_src_light = resources.read_text(
+            'pygame_light2d', 'fragment_light.glsl')
+        fragment_src_blur = resources.read_text(
+            'pygame_light2d', 'fragment_blur.glsl')
+        fragment_src_mask = resources.read_text(
+            'pygame_light2d', 'fragment_mask.glsl')
+        fragment_src_draw = resources.read_text(
+            'pygame_light2d', 'fragment_draw.glsl')
 
         self.prog_light = self.ctx.program(vertex_shader=vertex_src,
                                            fragment_shader=fragment_src_light)

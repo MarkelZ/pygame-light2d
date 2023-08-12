@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=59.6.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pygame-light2d"
+version = "1.0.0"
+description = "Fast 2D dynamic lighting engine for Pygame."
+readme = "README.md"
+authors = [{ name = "Markel Zubia", email = "markel.xubi@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["pygame", "light", "lights", "engine", "shadows", "dynamic", "2D"]
+dependencies = [
+    "numpy>=1.24.1",
+    "pygame>=2.3.0",
+    "moderngl>=5.8.2",
+    "PyOpenGL>=3.1.6",
+]
+requires-python = ">=3.10"
+
+[project.urls]
+Homepage = "https://github.com/MarkelZ/pygame-light2d"
