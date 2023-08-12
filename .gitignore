@@ -160,7 +160,7 @@ cython_debug/
 #.idea/
 
 # My stuff
-src/demo*
+src/example*
 src/assets/*
 TODO.md
 game_example/*
