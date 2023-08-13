@@ -19,6 +19,41 @@ class Layer(Enum):
 class LightingEngine:
 
     def __init__(self, native_res: tuple[int, int], lightmap_res: tuple[int, int]) -> None:
+        # Configure pygame
+        self._check_and_configure_pygame()
+
+        # Set the native and lightmap resolutions
+        self._native_res = native_res
+        self._lightmap_res = lightmap_res
+
+        # Default the ambient light to 25%
+        self._ambient = (.25, .25, .25, .25)
+
+        # Initialize the light and hull lists
+        self.lights: list[PointLight] = []
+        self.hulls: list[Hull] = []
+
+        # Create an OpenGL context
+        self.ctx = moderngl.create_context()
+        # self.ctx.enable(moderngl.BLEND)
+        # self.ctx.blend_func = self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA
+
+        # Load shaders
+        self._load_shaders()
+
+        # Create VAO and VBO
+        self._create_screen_vertex_buffers()
+
+        # Create render textures and corresponding FBOs
+        self._create_frame_buffers()
+
+        # Create SSBO for hull vertices
+        self.ssbo_v = self.ctx.buffer(reserve=4*2048)
+        self.ssbo_v.bind_to_uniform_block(1)
+        self.ssbo_ind = self.ctx.buffer(reserve=4*256)
+        self.ssbo_ind.bind_to_uniform_block(2)
+
+    def _check_and_configure_pygame(self):
         # Check that pygame has been initialized
         assert pygame.get_init(), 'Error: Pygame is not initialized. Please ensure you call pygame.init() before using the lighting engine.'
 
@@ -29,27 +64,12 @@ class LightingEngine:
             raise RuntimeError(
                 'Error: Pygame window not initialized. Please create a pygame window before starting the lighting engine.')
 
-        # Set the native and lightmap resolutions
-        self._native_res = native_res
-        self._lightmap_res = lightmap_res
-
-        # Set the ambient light to 25% by default
-        self._ambient = (.25, .25, .25, .25)
-
-        # Initialize the light and hull lists
-        self.lights: list[PointLight] = []
-        self.hulls: list[Hull] = []
-
         # Configure pygame display
         pygame.display.set_mode(
             screen_size, pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF)
 
-        # Create an OpenGL context
-        self.ctx = moderngl.create_context()
-        self.ctx.enable(moderngl.BLEND)
-        self.ctx.blend_func = self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA
-
-        # Load shaders
+    def _load_shaders(self):
+        # Read source files
         vertex_src = resources.read_text(
             'pygame_light2d', 'vertex.glsl')
         fragment_src_light = resources.read_text(
@@ -61,60 +81,57 @@ class LightingEngine:
         fragment_src_draw = resources.read_text(
             'pygame_light2d', 'fragment_draw.glsl')
 
-        self.prog_light = self.ctx.program(vertex_shader=vertex_src,
-                                           fragment_shader=fragment_src_light)
+        # Create shader programs
+        self._prog_light = self.ctx.program(vertex_shader=vertex_src,
+                                            fragment_shader=fragment_src_light)
+        self._prog_blur = self.ctx.program(vertex_shader=vertex_src,
+                                           fragment_shader=fragment_src_blur)
+        self._prog_mask = self.ctx.program(vertex_shader=vertex_src,
+                                           fragment_shader=fragment_src_mask)
+        self._prog_draw = self.ctx.program(vertex_shader=vertex_src,
+                                           fragment_shader=fragment_src_draw)
 
-        self.prog_blur = self.ctx.program(vertex_shader=vertex_src,
-                                          fragment_shader=fragment_src_blur)
-
-        self.prog_mask = self.ctx.program(vertex_shader=vertex_src,
-                                          fragment_shader=fragment_src_mask)
-
-        self.prog_draw = self.ctx.program(vertex_shader=vertex_src,
-                                          fragment_shader=fragment_src_draw)
-
+    def _create_screen_vertex_buffers(self):
         # Screen mesh
-        vertices = np.array([(-1.0, 1.0), (1.0, 1.0), (-1.0, -1.0),
-                            (-1.0, -1.0), (1.0, 1.0), (1.0, -1.0)], dtype=np.float32)
-        tex_coords = np.array([(0.0, 1.0), (1.0, 1.0), (0.0, 0.0),
-                               (0.0, 0.0), (1.0, 1.0), (1.0, 0.0)], dtype=np.float32)
-        vertex_data = np.hstack([vertices, tex_coords])
+        screen_vertices = np.array([(-1.0, 1.0), (1.0, 1.0), (-1.0, -1.0),
+                                    (-1.0, -1.0), (1.0, 1.0), (1.0, -1.0)], dtype=np.float32)
+        screen_tex_coords = np.array([(0.0, 1.0), (1.0, 1.0), (0.0, 0.0),
+                                      (0.0, 0.0), (1.0, 1.0), (1.0, 0.0)], dtype=np.float32)
+        screen_vertex_data = np.hstack([screen_vertices, screen_tex_coords])
 
         # VAO and VBO for screen mesh
-        vbo = self.ctx.buffer(vertex_data)
-        self.vao_light = self.ctx.vertex_array(self.prog_light, [
-            (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
+        screen_vbo = self.ctx.buffer(screen_vertex_data)
+        self._vao_light = self.ctx.vertex_array(self._prog_light, [
+            (screen_vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
-        self.vao_blur = self.ctx.vertex_array(self.prog_blur, [
-            (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
+        self._vao_blur = self.ctx.vertex_array(self._prog_blur, [
+            (screen_vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
-        self.vao_mask = self.ctx.vertex_array(self.prog_mask, [
-            (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
+        self._vao_mask = self.ctx.vertex_array(self._prog_mask, [
+            (screen_vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
 
+    def _create_frame_buffers(self):
         # Frame buffers
-        self._tex_bg = self.ctx.texture(native_res, components=4)
+        self._tex_bg = self.ctx.texture(self._native_res, components=4)
         self._tex_bg.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self._fbo_bg = self.ctx.framebuffer([self._tex_bg])
 
-        self._tex_fg = self.ctx.texture(native_res, components=4)
+        self._tex_fg = self.ctx.texture(self._native_res, components=4)
         self._tex_fg.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self._fbo_fg = self.ctx.framebuffer([self._tex_fg])
 
         # Double buffer for lights
-        self._buf_lt = DoubleBuff(self.ctx, lightmap_res)
+        self._buf_lt = DoubleBuff(self.ctx, self._lightmap_res)
 
         # Ambient occlussion map
         self._tex_ao = self.ctx.texture(
-            lightmap_res, components=4, dtype='f2')
+            self._lightmap_res, components=4, dtype='f2')
         self._tex_ao.filter = (moderngl.LINEAR, moderngl.LINEAR)
         self._fbo_ao = self.ctx.framebuffer([self._tex_ao])
 
-        # SSBO for hull vertices
-        self.ssbo_v = self.ctx.buffer(reserve=4*2048)
-        self.ssbo_v.bind_to_uniform_block(1)
-        self.ssbo_ind = self.ctx.buffer(reserve=4*256)
-        self.ssbo_ind.bind_to_uniform_block(2)
+    def set_filter(self, layer: Layer, filter):
+        self._get_tex(layer).filter = filter
 
     def set_ambient(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255):
         self._ambient = normalize_color_arguments(R, G, B, A)
@@ -162,69 +179,26 @@ class LightingEngine:
         self._fbo_ao.clear(0, 0, 0, 0)
         self._buf_lt.clear(0, 0, 0, 0)
 
-        # SSBO with hull vertices and their indices
-        vertices = []
-        indices = []
-        for hull in self.hulls:
-            if not hull.enabled:
-                continue
-            vertices += hull.vertices
-            indices.append(len(vertices))
+        # Send hull data to SSBOs
+        self._send_hull_data()
 
-        # Store hull vertex data in SSBO
-        vertices = [self._point_to_uv(v) for v in vertices]
-        data_v = np.array(vertices, dtype=np.float32).flatten().tobytes()
-        self.ssbo_v.write(data_v)
-
-        # Store hull vertex indices in SSBO
-        num_hulls = len(indices)
-        data_ind = np.array(indices, dtype=np.int32).flatten().tobytes()
-        self.ssbo_ind.write(data_ind)
-
-        # Disable alpha blending to render lights
-        self.ctx.disable(moderngl.BLEND)
-
-        for light in self.lights:
-            # Skip light if disabled
-            if not light.enabled:
-                continue
-
-            # Use light double buffer
-            self._buf_lt.tex.use()
-            self._buf_lt.fbo.use()
-
-            # Send light uniforms
-            self.prog_light['lightPos'] = self._point_to_uv(light.position)
-            self.prog_light['lightCol'] = light._color
-            self.prog_light['lightPower'] = light.power
-            self.prog_light['radius'] = self._length_to_uv(light.radius)
-
-            # Send number of hulls
-            self.prog_light['numHulls'] = num_hulls
-
-            # Render onto lightmap
-            self.vao_light.render()
-
-            # Flip double buffer
-            self._buf_lt.flip()
-
-        # Re-enable alpha blending
-        self.ctx.enable(moderngl.BLEND)
+        # Render lights onto double buffer
+        self._render_to_buf_lt()
 
         # Blur lightmap for soft shadows and render onto aomap
         self._fbo_ao.use()
         self._buf_lt.tex.use()
-        self.vao_blur.render()
+        self._vao_blur.render()
 
         # Render background masked with the lightmap
         self.ctx.screen.use()
         self._tex_bg.use()
 
         self._tex_ao.use(1)
-        self.prog_mask['lightmap'].value = 1
-        self.prog_mask['ambient'].value = self._ambient
+        self._prog_mask['lightmap'].value = 1
+        self._prog_mask['ambient'].value = self._ambient
 
-        self.vao_mask.render()
+        self._vao_mask.render()
 
         # Render foreground onto screen
         self._render_tex_to_fbo(self._tex_fg, self.ctx.screen,
@@ -243,6 +217,13 @@ class LightingEngine:
             return self._fbo_bg
         elif layer == Layer.FOREGROUND:
             return self._fbo_fg
+        return None
+
+    def _get_tex(self, layer: Layer):
+        if layer == Layer.BACKGROUND:
+            return self._tex_bg
+        elif layer == Layer.FOREGROUND:
+            return self._tex_fg
         return None
 
     def _render_tex_to_fbo(self, tex: moderngl.Texture, fbo: moderngl.Framebuffer, dest: pygame.Rect, source: pygame.Rect):
@@ -272,7 +253,7 @@ class LightingEngine:
         buffer_data = np.hstack([vertices, tex_coords])
 
         vbo = self.ctx.buffer(buffer_data)
-        vao = self.ctx.vertex_array(self.prog_draw, [
+        vao = self.ctx.vertex_array(self._prog_draw, [
             (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
 
@@ -280,3 +261,53 @@ class LightingEngine:
         tex.use()
         fbo.use()
         vao.render()
+
+    def _send_hull_data(self):
+        # Lists with hull vertices and indices
+        vertices = []
+        indices = []
+        for hull in self.hulls:
+            if not hull.enabled:
+                continue
+            vertices += hull.vertices
+            indices.append(len(vertices))
+
+        # Store hull vertex data in SSBO
+        vertices = [self._point_to_uv(v) for v in vertices]
+        data_v = np.array(vertices, dtype=np.float32).flatten().tobytes()
+        self.ssbo_v.write(data_v)
+
+        # Store hull vertex indices in SSBO
+        data_ind = np.array(indices, dtype=np.int32).flatten().tobytes()
+        self.ssbo_ind.write(data_ind)
+
+    def _render_to_buf_lt(self):
+        # Disable alpha blending to render lights
+        self.ctx.disable(moderngl.BLEND)
+
+        for light in self.lights:
+            # Skip light if disabled
+            if not light.enabled:
+                continue
+
+            # Use light double buffer
+            self._buf_lt.tex.use()
+            self._buf_lt.fbo.use()
+
+            # Send light uniforms
+            self._prog_light['lightPos'] = self._point_to_uv(light.position)
+            self._prog_light['lightCol'] = light._color
+            self._prog_light['lightPower'] = light.power
+            self._prog_light['radius'] = self._length_to_uv(light.radius)
+
+            # Send number of hulls
+            self._prog_light['numHulls'] = len(self.hulls)
+
+            # Render onto lightmap
+            self._vao_light.render()
+
+            # Flip double buffer
+            self._buf_lt.flip()
+
+        # Re-enable alpha blending
+        self.ctx.enable(moderngl.BLEND)
