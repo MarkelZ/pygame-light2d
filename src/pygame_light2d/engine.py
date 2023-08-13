@@ -18,13 +18,14 @@ class LightingEngine:
 
     def __init__(self, native_res: tuple[int, int], lightmap_res: tuple[int, int]) -> None:
         # Check that pygame has been initialized
-        assert pygame.get_init(), 'Please, initialize Pygame before the lighting engine.'
+        assert pygame.get_init(), 'Error: Pygame is not initialized. Please ensure you call pygame.init() before using the lighting engine.'
 
         # Try to get the current screen resolution
         try:
             screen_size = pygame.display.get_window_size()
         except:
-            assert False, 'Please, initialize a pygame window before starting the lighting engine.'
+            raise RuntimeError(
+                'Error: Pygame window not initialized. Please create a pygame window before starting the lighting engine.')
 
         # Set the native and lightmap resolutions
         self.native_res = native_res
