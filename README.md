@@ -39,7 +39,7 @@ This code is licensed under the terms of the MIT license.
 
 This section will guide you through creating a pixel-art game with 2D lighting.
 
-If you prefer examining a working example, take a look at the examples directory.
+If you prefer examining a working example, take a look at the [`examples/`](examples/) directory.
 
 We will start by importing `pygame`, as well as some components from the `pygame-light2d`:
 
