@@ -22,12 +22,12 @@ lights_engine.set_ambient(128, 128, 128, 128)
 sprite = lights_engine.load_texture('assets/dragon.png')
 
 # Create and add a light
-light = PointLight(position=(20, 20), power=1., radius=300)
+light = PointLight(position=(0, 0), power=1., radius=250)
 light.set_color(50, 100, 200, 200)
 lights_engine.lights.append(light)
 
 # Create and add a hull
-vertices = [(50, 50), (125, 50), (125, 125), (50, 125)]
+vertices = [(125, 50), (200, 50), (200, 125), (125, 125)]
 hull = Hull(vertices)
 lights_engine.hulls.append(hull)
 
@@ -52,13 +52,13 @@ while running:
     # Render sprite1 in the background
     lights_engine.render_texture(
         sprite, pl2d.BACKGROUND,
-        pygame.Rect(40, 30, sprite.width, sprite.height),
+        pygame.Rect(40, 50, sprite.width, sprite.height),
         pygame.Rect(0, 0, sprite.width, sprite.height))
 
     # Render sprite2 in the foreground
     lights_engine.render_texture(
         sprite, pl2d.FOREGROUND,
-        pygame.Rect(200, 60, sprite.width, sprite.height),
+        pygame.Rect(210, 50, sprite.width, sprite.height),
         pygame.Rect(0, 0, sprite.width, sprite.height))
 
     # Render the scene

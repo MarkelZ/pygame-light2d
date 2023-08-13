@@ -43,7 +43,7 @@ def random_color():
 
 
 # Create a point light
-light_radius = 900
+light_radius = 600
 light_pow = 1.0
 light = PointLight(position=(100, 100), power=light_pow, radius=light_radius)
 
