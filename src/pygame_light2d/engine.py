@@ -203,6 +203,8 @@ class LightingEngine:
         vertices = []
         indices = []
         for hull in self.hulls:
+            if not hull.enabled:
+                continue
             vertices += hull.vertices
             indices.append(len(vertices))
 
