@@ -41,7 +41,7 @@ This section will guide you through creating a pixel-art game with 2D lighting.
 
 If you prefer examining a working example, take a look at the [`examples/`](examples/) directory.
 
-We will start by importing `pygame`, as well as some components from the `pygame-light2d`:
+We will start by importing `pygame`, as well as some components from `pygame-light2d`:
 
 ```py
 import pygame
@@ -58,7 +58,7 @@ screen_res = (1280, 720)
 pygame.display.set_mode(screen_res)
 ```
 
-Now we will create a the lighting engine with a native resolution of 320x180:
+Now we will create a lighting engine with a native resolution of 320x180:
 
 ```py
 native_res = (320, 180)
@@ -83,30 +83,30 @@ This sets the native resolution the same as the screen resolution, getting rid o
 Set the ambient light to 50% brightness:
 
 ```py
-lights_engine.ambient = [0.5 for _ in range(4)]
+lights_engine.set_ambient(128, 128, 128, 128)
 ```
 
-Textures are loaded via the lighting engine. Let's load two sprites named `sprite1.png` and `sprite2.png` from the `assets/` directory:
+Textures are loaded through the lighting engine. Let's load two sprites named `sprite1.png` and `sprite2.png` from the `assets/` directory:
 
 ```py
 sprite1 = lights_engine.load_texture('assets/sprite1.png')
 sprite2 = lights_engine.load_texture('assets/sprite2.png')
 ```
 
-The reason for loading the textures through the engine instead of through `pygame` is that the engine creates OpenGL textures, which are much faster to render.
+The reason for loading the textures through the engine instead of through `pygame` is that the engine works with OpenGL textures, which are much faster to render.
 
 Now let's add a blue light:
 
 ```py
-light = PointLight(position=(20, 20), power=1., radius=300)
+light = PointLight(position=(0, 0), power=1., radius=250)
 light.set_color(50, 100, 200, 200)
 lights_engine.lights.append(light)
 ```
 
-Add a square-shaped hull at position (50, 50) with a side length of 75:
+Add a square-shaped hull at position (125, 50) with a side length of 75:
 
 ```py
-vertices = [(50, 50), (125, 50), (125, 125), (50, 125)]
+vertices = [(125, 50), (200, 50), (200, 125), (125, 125)]
 hull = Hull(vertices)
 lights_engine.hulls.append(hull)
 ```
@@ -164,20 +164,20 @@ Now, render the first sprite in the background at position (40, 30):
 ```py
     lights_engine.render_texture(
         sprite1, pl2d.BACKGROUND,
-        pygame.Rect(40, 30, sprite1.width, sprite1.height),
+        pygame.Rect(40, 50, sprite.width, sprite.height),
         pygame.Rect(0, 0, sprite1.width, sprite1.height))
 ```
 
-Render the second sprite in the foreground at position 
+Render the second sprite in the foreground at position (210, 50):
 
 ```py
     lights_engine.render_texture(
         sprite1, pl2d.FOREGROUND,
-        pygame.Rect(200, 60, sprite2.width, sprite2.height),
+        pygame.Rect(210, 50, sprite.width, sprite.height),
         pygame.Rect(0, 0, sprite2.width, sprite2.height))
 ```
 
-Sprites rendered in the background are affected by the lights and shadows in the scene. This is how most game components would be drawn, such as the player, background, enemies, etc.
+Sprites rendered in the background are affected by the lights and shadows in the scene. This is how most game components are usually drawn, such as the player, background, enemies, etc.
 
 Sprites rendered in the foreground are shown in full brightness, unaffected by the ligthing. This is useful for displaying things like the HUD or menu components.
 
