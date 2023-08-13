@@ -3,6 +3,9 @@
 in vec2 fragmentTexCoord;// top-left is [0, 1] and bottom-right is [1, 0]
 uniform sampler2D imageTexture;// used texture unit
 
+uniform int native_width;
+uniform int native_height;
+
 uniform vec2 lightPos;
 
 layout(binding=1)uniform hullVSSBO{
@@ -19,6 +22,10 @@ uniform float lightPower;
 uniform float radius;
 
 out vec4 color;
+
+vec2 uv_to_world(vec2 v){
+    return vec2(native_width*v.x,native_height*v.y);
+}
 
 bool isOcluded(vec2 p,vec2 q){
     vec2 v1=q-p;
@@ -46,7 +53,7 @@ void main()
     color=texture(imageTexture,fragmentTexCoord);
     
     // Skip if fragment is too far away from light source
-    vec2 diff=lightPos-fragmentTexCoord;
+    vec2 diff=uv_to_world(lightPos-fragmentTexCoord);
     float dist=sqrt(diff.x*diff.x+diff.y*diff.y);
     if(dist>=radius){
         return;

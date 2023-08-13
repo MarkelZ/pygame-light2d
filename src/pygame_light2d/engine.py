@@ -295,9 +295,6 @@ class LightingEngine:
     def _point_to_uv(self, p: tuple[float, float]):
         return [p[0]/self._native_res[0], 1 - (p[1]/self._native_res[1])]
 
-    def _length_to_uv(self, l: float):
-        return l/self._native_res[0]
-
     def _get_fbo(self, layer: Layer):
         if layer == Layer.BACKGROUND:
             return self._fbo_bg
@@ -384,7 +381,9 @@ class LightingEngine:
             self._prog_light['lightPos'] = self._point_to_uv(light.position)
             self._prog_light['lightCol'] = light._color
             self._prog_light['lightPower'] = light.power
-            self._prog_light['radius'] = self._length_to_uv(light.radius)
+            self._prog_light['radius'] = light.radius
+            self._prog_light['native_width'] = self._native_res[0]
+            self._prog_light['native_height'] = self._native_res[1]
 
             # Send number of hulls
             self._prog_light['numHulls'] = len(self.hulls)
