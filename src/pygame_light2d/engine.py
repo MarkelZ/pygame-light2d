@@ -8,6 +8,7 @@ from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST
 from pygame_light2d.light import PointLight
 from pygame_light2d.hull import Hull
 from pygame_light2d.color import normalize_color_arguments, denormalize_color
+from pygame_light2d.double_buff import DoubleBuff
 
 
 class Layer(Enum):
@@ -101,15 +102,7 @@ class LightingEngine:
         self._fbo_fg = self.ctx.framebuffer([self._tex_fg])
 
         # Double buffer for lights
-        self._tex_lt1 = self.ctx.texture(
-            lightmap_res, components=4, dtype='f2')
-        self._tex_lt1.filter = (moderngl.LINEAR, moderngl.LINEAR)
-        self._fbo_lt1 = self.ctx.framebuffer([self._tex_lt1])
-
-        self._tex_lt2 = self.ctx.texture(
-            lightmap_res, components=4, dtype='f2')
-        self._tex_lt2.filter = (moderngl.LINEAR, moderngl.LINEAR)
-        self._fbo_lt2 = self.ctx.framebuffer([self._tex_lt2])
+        self._buf_lt = DoubleBuff(self.ctx, lightmap_res)
 
         # Ambient occlussion map
         self._tex_ao = self.ctx.texture(
@@ -167,8 +160,7 @@ class LightingEngine:
         # Clear intermediate buffers
         self.ctx.screen.clear(0, 0, 0, 1)
         self._fbo_ao.clear(0, 0, 0, 0)
-        self._fbo_lt1.clear(0, 0, 0, 0)
-        self._fbo_lt2.clear(0, 0, 0, 0)
+        self._buf_lt.clear(0, 0, 0, 0)
 
         # SSBO with hull vertices and their indices
         vertices = []
@@ -189,23 +181,17 @@ class LightingEngine:
         data_ind = np.array(indices, dtype=np.int32).flatten().tobytes()
         self.ssbo_ind.write(data_ind)
 
-        fbo_ind = 1
-
+        # Disable alpha blending to render lights
         self.ctx.disable(moderngl.BLEND)
+
         for light in self.lights:
             # Skip light if disabled
             if not light.enabled:
                 continue
 
-            # Flip double buff
-            if fbo_ind == 1:
-                self._fbo_lt1.use()
-                self._tex_lt2.use()
-                fbo_ind = 2
-            elif fbo_ind == 2:
-                self._fbo_lt2.use()
-                self._tex_lt1.use()
-                fbo_ind = 1
+            # Use light double buffer
+            self._buf_lt.tex.use()
+            self._buf_lt.fbo.use()
 
             # Send light uniforms
             self.prog_light['lightPos'] = self._point_to_uv(light.position)
@@ -218,14 +204,16 @@ class LightingEngine:
 
             # Render onto lightmap
             self.vao_light.render()
+
+            # Flip double buffer
+            self._buf_lt.flip()
+
+        # Re-enable alpha blending
         self.ctx.enable(moderngl.BLEND)
 
         # Blur lightmap for soft shadows and render onto aomap
         self._fbo_ao.use()
-        if fbo_ind == 1:
-            self._tex_lt2.use()
-        else:
-            self._tex_lt1.use()
+        self._buf_lt.tex.use()
         self.vao_blur.render()
 
         # Render background masked with the lightmap
