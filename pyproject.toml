@@ -7,7 +7,7 @@ name = "pygame-light2d"
 version = "1.0.0"
 description = "Fast 2D dynamic lighting engine for Pygame."
 readme = "README.md"
-authors = [{ name = "Markel Zubia", email = "markel.xubi@gmail.com" }]
+authors = [{ name = "Markel Zubia" }]
 license = { file = "LICENSE" }
 classifiers = [
     "License :: OSI Approved :: MIT License",
