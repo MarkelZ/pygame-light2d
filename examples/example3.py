@@ -25,7 +25,7 @@ lights_engine = LightingEngine(
     native_res=screen_res, lightmap_res=(int(screen_width/2.5), int(screen_height/2.5)))
 
 # Set the ambient light
-lights_engine.ambient = [0.3 for _ in range(4)]
+lights_engine.set_ambient(128, 128, 128, 128)
 
 # Load the background image
 tex_background = lights_engine.load_texture('assets/puppies.png')

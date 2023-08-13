@@ -7,6 +7,7 @@ from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST
 
 from pygame_light2d.light import PointLight
 from pygame_light2d.hull import Hull
+from pygame_light2d.color import normalize_color_arguments, denormalize_color
 
 
 class Layer(Enum):
@@ -28,11 +29,11 @@ class LightingEngine:
                 'Error: Pygame window not initialized. Please create a pygame window before starting the lighting engine.')
 
         # Set the native and lightmap resolutions
-        self.native_res = native_res
-        self.lightmap_res = lightmap_res
+        self._native_res = native_res
+        self._lightmap_res = lightmap_res
 
-        # Set the ambient light
-        self.ambient = (.25, .25, .25, .25)
+        # Set the ambient light to 25% by default
+        self._ambient = (.25, .25, .25, .25)
 
         # Initialize the light and hull lists
         self.lights: list[PointLight] = []
@@ -122,22 +123,18 @@ class LightingEngine:
         self.ssbo_ind = self.ctx.buffer(reserve=4*256)
         self.ssbo_ind.bind_to_uniform_block(2)
 
-    # TEMP
-    def _point_to_uv(self, p: tuple[float, float]):
-        return [p[0]/self.native_res[0], 1 - (p[1]/self.native_res[1])]
+    def set_ambient(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255):
+        self._ambient = normalize_color_arguments(R, G, B, A)
 
-    def _length_to_uv(self, l: float):
-        return l/self.native_res[0]
+    def get_ambient(self):
+        return denormalize_color(self._ambient)
 
     def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
         # Create a framebuffer with the texture
         fb = self.ctx.framebuffer([tex])
 
         # Select destination framebuffer correcponding to layer
-        if layer == Layer.BACKGROUND:
-            fbo = self._fbo_bg
-        elif layer == Layer.FOREGROUND:
-            fbo = self._fbo_fg
+        fbo = self._get_fbo(layer)
 
         # Blit texture onto destination
         glBlitNamedFramebuffer(fb.glo, fbo.glo, source.x, source.y, source.w, source.h,
@@ -145,51 +142,24 @@ class LightingEngine:
 
     def render_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
         # Render texture onto layer with the draw shader
-        if layer == Layer.BACKGROUND:
-            fbo = self._fbo_bg
-        elif layer == Layer.FOREGROUND:
-            fbo = self._fbo_fg
-
+        fbo = self._get_fbo(layer)
         self._render_tex_to_fbo(tex, fbo, dest, source)
 
-    def _render_tex_to_fbo(self, tex: moderngl.Texture, fbo: moderngl.Framebuffer, dest: pygame.Rect, source: pygame.Rect):
-        # Mesh for destination rect on screen
-        width, height = fbo.size
-        x = 2. * dest.x / width - 1.
-        y = 1. - 2. * dest.y / height
-        w = 2. * dest.w / width
-        h = 2. * dest.h / height
-        vertices = np.array([(x, y), (x + w, y), (x, y - h),
-                            (x, y - h), (x + w, y), (x + w, y - h)], dtype=np.float32)
+    def surface_to_texture(self, sfc: pygame.Surface):
+        img_flip = pygame.transform.flip(sfc, False, True)
+        img_data = pygame.image.tostring(img_flip, "RGBA")
 
-        # Mesh for source within the texture
-        x = source.x / tex.size[0]
-        y = source.y / tex.size[1]
-        w = source.w / tex.size[0]
-        h = source.h / tex.size[1]
+        tex = self.ctx.texture(sfc.get_size(), components=4, data=img_data)
+        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        return tex
 
-        p1 = (x, y + h)
-        p2 = (x + w, y + h)
-        p3 = (x, y)
-        p4 = (x + w, y)
-        tex_coords = np.array([p1, p2, p3,
-                               p3, p2, p4], dtype=np.float32)
-
-        # Create VBO and VAO
-        buffer_data = np.hstack([vertices, tex_coords])
-
-        vbo = self.ctx.buffer(buffer_data)
-        vao = self.ctx.vertex_array(self.prog_draw, [
-            (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
-        ])
-
-        # Use buffers and render
-        tex.use()
-        fbo.use()
-        vao.render()
+    def load_texture(self, path: str) -> moderngl.Texture:
+        img = pygame.image.load(path).convert_alpha()
+        return self.surface_to_texture(img)
 
     # Clear background
-    def clear(self, R=0, G=0, B=0, A=1):
+    def clear(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255):
+        R, G, B, A = normalize_color_arguments(R, G, B, A)
         self._fbo_bg.clear(R, G, B, A)
         self._fbo_fg.clear(0, 0, 0, 0)
 
@@ -264,7 +234,7 @@ class LightingEngine:
 
         self._tex_ao.use(1)
         self.prog_mask['lightmap'].value = 1
-        self.prog_mask['ambient'].value = self.ambient
+        self.prog_mask['ambient'].value = self._ambient
 
         self.vao_mask.render()
 
@@ -274,14 +244,51 @@ class LightingEngine:
                                             self.ctx.screen.height),
                                 pygame.Rect(0, 0, self._tex_fg.width, self._tex_fg.height))
 
-    def surface_to_texture(self, sfc: pygame.Surface):
-        img_flip = pygame.transform.flip(sfc, False, True)
-        img_data = pygame.image.tostring(img_flip, "RGBA")
+    def _point_to_uv(self, p: tuple[float, float]):
+        return [p[0]/self._native_res[0], 1 - (p[1]/self._native_res[1])]
 
-        tex = self.ctx.texture(sfc.get_size(), components=4, data=img_data)
-        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
-        return tex
+    def _length_to_uv(self, l: float):
+        return l/self._native_res[0]
 
-    def load_texture(self, path: str) -> moderngl.Texture:
-        img = pygame.image.load(path).convert_alpha()
-        return self.surface_to_texture(img)
+    def _get_fbo(self, layer: Layer):
+        if layer == Layer.BACKGROUND:
+            return self._fbo_bg
+        elif layer == Layer.FOREGROUND:
+            return self._fbo_fg
+        return None
+
+    def _render_tex_to_fbo(self, tex: moderngl.Texture, fbo: moderngl.Framebuffer, dest: pygame.Rect, source: pygame.Rect):
+        # Mesh for destination rect on screen
+        width, height = fbo.size
+        x = 2. * dest.x / width - 1.
+        y = 1. - 2. * dest.y / height
+        w = 2. * dest.w / width
+        h = 2. * dest.h / height
+        vertices = np.array([(x, y), (x + w, y), (x, y - h),
+                            (x, y - h), (x + w, y), (x + w, y - h)], dtype=np.float32)
+
+        # Mesh for source within the texture
+        x = source.x / tex.size[0]
+        y = source.y / tex.size[1]
+        w = source.w / tex.size[0]
+        h = source.h / tex.size[1]
+
+        p1 = (x, y + h)
+        p2 = (x + w, y + h)
+        p3 = (x, y)
+        p4 = (x + w, y)
+        tex_coords = np.array([p1, p2, p3,
+                               p3, p2, p4], dtype=np.float32)
+
+        # Create VBO and VAO
+        buffer_data = np.hstack([vertices, tex_coords])
+
+        vbo = self.ctx.buffer(buffer_data)
+        vao = self.ctx.vertex_array(self.prog_draw, [
+            (vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
+        ])
+
+        # Use buffers and render
+        tex.use()
+        fbo.use()
+        vao.render()

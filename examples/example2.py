@@ -30,7 +30,7 @@ lights_engine = LightingEngine(
     native_res=native_res, lightmap_res=native_res)
 
 # Set the ambient light
-lights_engine.ambient = [0.5 for _ in range(4)]
+lights_engine.set_ambient(128, 128, 128, 128)
 
 # Load the background image
 tex_background = lights_engine.load_texture('assets/backg.png')

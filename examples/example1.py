@@ -16,11 +16,10 @@ lights_engine = LightingEngine(
     native_res=native_res, lightmap_res=native_res)
 
 # Set the ambient light to 50%
-lights_engine.ambient = [0.5 for _ in range(4)]
+lights_engine.set_ambient(128, 128, 128, 128)
 
 # Load two sprites
-sprite1 = lights_engine.load_texture('assets/dragon.png')
-sprite2 = lights_engine.load_texture('assets/dragon.png')
+sprite = lights_engine.load_texture('assets/dragon.png')
 
 # Create and add a light
 light = PointLight(position=(20, 20), power=1., radius=300)
@@ -39,9 +38,6 @@ while running:
     # Tick the clock at 60 frames per second
     clock.tick(60)
 
-    # Clear the background with white
-    lights_engine.clear(255, 255, 255)
-
     # Mouse pointer's position on the screen
     mp = pygame.mouse.get_pos()
     # Convert to native coordinates
@@ -50,17 +46,20 @@ while running:
     # Assign the mouse pointer's position to the light
     light.position = mouse_native_pos
 
+    # Clear the background with black color
+    lights_engine.clear(255, 255, 255)
+
     # Render sprite1 in the background
     lights_engine.render_texture(
-        sprite1, pl2d.BACKGROUND,
-        pygame.Rect(40, 30, sprite1.width, sprite1.height),
-        pygame.Rect(0, 0, sprite1.width, sprite1.height))
+        sprite, pl2d.BACKGROUND,
+        pygame.Rect(40, 30, sprite.width, sprite.height),
+        pygame.Rect(0, 0, sprite.width, sprite.height))
 
-    # Render sprite1 in the foreground
+    # Render sprite2 in the foreground
     lights_engine.render_texture(
-        sprite1, pl2d.FOREGROUND,
-        pygame.Rect(200, 60, sprite1.width, sprite1.height),
-        pygame.Rect(0, 0, sprite1.width, sprite1.height))
+        sprite, pl2d.FOREGROUND,
+        pygame.Rect(200, 60, sprite.width, sprite.height),
+        pygame.Rect(0, 0, sprite.width, sprite.height))
 
     # Render the scene
     lights_engine.render()
