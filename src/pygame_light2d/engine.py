@@ -17,8 +17,17 @@ class Layer(Enum):
 
 
 class LightingEngine:
+    """A class for managing lighting effects within a Pygame environment."""
 
     def __init__(self, native_res: tuple[int, int], lightmap_res: tuple[int, int]) -> None:
+        """
+        Initialize the lighting engine.
+
+        Args:
+            native_res (tuple[int, int]): Native resolution of the game (width, height).
+            lightmap_res (tuple[int, int]): Lightmap resolution (width, height).
+        """
+
         # Configure pygame
         self._check_and_configure_pygame()
 
@@ -35,8 +44,6 @@ class LightingEngine:
 
         # Create an OpenGL context
         self.ctx = moderngl.create_context()
-        # self.ctx.enable(moderngl.BLEND)
-        # self.ctx.blend_func = self.ctx.SRC_ALPHA, self.ctx.ONE_MINUS_SRC_ALPHA
 
         # Load shaders
         self._load_shaders()
@@ -130,16 +137,48 @@ class LightingEngine:
         self._tex_ao.filter = (moderngl.LINEAR, moderngl.LINEAR)
         self._fbo_ao = self.ctx.framebuffer([self._tex_ao])
 
-    def set_filter(self, layer: Layer, filter):
+    def set_filter(self, layer: Layer, filter) -> None:
+        """
+        Set the filter for a specific layer's texture.
+
+        Args:
+            layer (Layer): The layer to apply the filter to.
+            filter (tuple[moderngl.Constant, moderngl.Constant]): The filter to apply to the texture.
+        """
         self._get_tex(layer).filter = filter
 
-    def set_ambient(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255):
+    def set_ambient(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255) -> None:
+        """
+        Set the ambient light color.
+
+        Args:
+            R (int or tuple[int]): Red component value or tuple containing RGB or RGBA values (0-255).
+            G (int): Green component value (0-255).
+            B (int): Blue component value (0-255).
+            A (int): Alpha component value (0-255).
+        """
         self._ambient = normalize_color_arguments(R, G, B, A)
 
-    def get_ambient(self):
+    def get_ambient(self) -> tuple[int, int, int, int]:
+        """
+        Get the ambient light color.
+
+        Returns:
+            tuple[int, int, int, int]: Ambient light color in 0-255 scale (R, G, B, A).
+        """
         return denormalize_color(self._ambient)
 
     def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
+        """
+        Blit a texture onto a specified layer's framebuffer.
+
+        Args:
+            tex (moderngl.Texture): Texture to blit.
+            layer (Layer): Layer to blit the texture onto.
+            dest (pygame.Rect): Destination rectangle.
+            source (pygame.Rect): Source rectangle from the texture.
+        """
+
         # Create a framebuffer with the texture
         fb = self.ctx.framebuffer([tex])
 
@@ -151,11 +190,31 @@ class LightingEngine:
                                dest.x, dest.y, dest.w, dest.h, GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
     def render_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
+        """
+        Render a texture onto a specified layer's framebuffer using the draw shader.
+
+        Args:
+            tex (moderngl.Texture): Texture to render.
+            layer (Layer): Layer to render the texture onto.
+            dest (pygame.Rect): Destination rectangle.
+            source (pygame.Rect): Source rectangle from the texture.
+        """
+
         # Render texture onto layer with the draw shader
         fbo = self._get_fbo(layer)
         self._render_tex_to_fbo(tex, fbo, dest, source)
 
-    def surface_to_texture(self, sfc: pygame.Surface):
+    def surface_to_texture(self, sfc: pygame.Surface) -> moderngl.Texture:
+        """
+        Convert a pygame.Surface to a moderngl.Texture.
+
+        Args:
+            sfc (pygame.Surface): Surface to convert.
+
+        Returns:
+            moderngl.Texture: Converted texture.
+        """
+
         img_flip = pygame.transform.flip(sfc, False, True)
         img_data = pygame.image.tostring(img_flip, "RGBA")
 
@@ -164,16 +223,43 @@ class LightingEngine:
         return tex
 
     def load_texture(self, path: str) -> moderngl.Texture:
+        """
+        Load a texture from a file.
+
+        Args:
+            path (str): Path to the texture file.
+
+        Returns:
+            moderngl.Texture: Loaded texture.
+        """
+
         img = pygame.image.load(path).convert_alpha()
         return self.surface_to_texture(img)
 
-    # Clear background
     def clear(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255):
+        """
+        Clear the background with a color.
+
+        Args:
+            R (int or tuple[int]): Red component value or tuple containing RGB or RGBA values (0-255).
+            G (int): Green component value (0-255).
+            B (int): Blue component value (0-255).
+            A (int): Alpha component value (0-255).
+        """
         R, G, B, A = normalize_color_arguments(R, G, B, A)
         self._fbo_bg.clear(R, G, B, A)
         self._fbo_fg.clear(0, 0, 0, 0)
 
     def render(self):
+        """
+        Render the lighting effects onto the screen.
+
+        Clears intermediate buffers, renders lights onto the double buffer,
+        blurs the lightmap for soft shadows, and renders background and foreground.
+
+        This method is responsible for the final rendering of lighting effects onto the screen.
+        """
+
         # Clear intermediate buffers
         self.ctx.screen.clear(0, 0, 0, 1)
         self._fbo_ao.clear(0, 0, 0, 0)
