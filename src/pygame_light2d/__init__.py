@@ -41,7 +41,11 @@ from .light import PointLight
 BACKGROUND = Layer.BACKGROUND
 FOREGROUND = Layer.FOREGROUND
 
-__all__ = ['LightingEngine', 'PointLight', 'Hull', 'BACKGROUND', 'FOREGROUND']
+NEAREST = moderngl.NEAREST
+LINEAR = moderngl.LINEAR
+
+__all__ = ['LightingEngine', 'PointLight', 'Hull', 'Layer'
+           'BACKGROUND', 'FOREGROUND', 'NEAREST', 'LINEAR']
 
 # Version of the pygame_light2d package
 __version__ = '1.0.0'
