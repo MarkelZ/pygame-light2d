@@ -35,6 +35,16 @@ If there are no errors, the installation was successful!
 
 To learn how to create a simple game with lighting effects using `pygame-light2d`, check out the [`Getting started`](https://github.com/MarkelZ/pygame-light2d/wiki/Getting-Started) page on the wiki.
 
+## Documentation
+
+### Using the API
+
+For detailed explanations of the API, please refer to the [API Reference](https://github.com/MarkelZ/pygame-light2d/wiki).
+
+### Using `pygame-light2d` in an existing project
+
+If you're looking to incorporate `pygame-ligth2d` into an existing project, we recommend starting with our guide on [Adding lights to an existing project](https://github.com/MarkelZ/pygame-light2d/wiki/Adding-lights-to-an-existing-project).
+
 ## Contributing
 
 We greatly appreciate and encourage contributions from the community! 
