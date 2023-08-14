@@ -24,6 +24,6 @@ dependencies = [
 requires-python = ">=3.10"
 
 [project.urls]
-homepage = "https://github.com/MarkelZ/pygame-light2d"
-documentation = "https://github.com/MarkelZ/pygame-light2d/wiki"
-tracker = "https://github.com/MarkelZ/pygame-light2d/issues"
+"Bug Reports" = "https://github.com/MarkelZ/pygame-light2d/issues"
+Homepage = "https://github.com/MarkelZ/pygame-light2d"
+Documentation = "https://github.com/MarkelZ/pygame-light2d/wiki"
