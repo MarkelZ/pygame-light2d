@@ -39,7 +39,7 @@ To learn how to create a simple game with lighting effects using `pygame-light2d
 
 ### Using the API
 
-For detailed explanations of the API, please refer to the [API Reference](https://github.com/MarkelZ/pygame-light2d/wiki).
+For detailed explanations of the API, please refer to the [API Reference](https://github.com/MarkelZ/pygame-light2d/wiki/API-Reference).
 
 ### Using `pygame-light2d` in an existing project
 
