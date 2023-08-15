@@ -149,6 +149,9 @@ class LightingEngine:
         """
         self._get_tex(layer).filter = filter
 
+    def set_aomap_filter(self, filter) -> None:
+        self._tex_ao.filter = filter
+
     def set_ambient(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255) -> None:
         """
         Set the ambient light color.
