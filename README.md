@@ -45,15 +45,15 @@ For detailed explanations of the API, please refer to the [API Reference](https:
 
 If you're looking to incorporate `pygame-ligth2d` into an existing project, we recommend starting with our guide on [Adding lights to an existing project](https://github.com/MarkelZ/pygame-light2d/wiki/Adding-lights-to-an-existing-project).
 
+## Frequently Asked Questions
+
+For frequently asked questions check out [FAQ](https://github.com/MarkelZ/pygame-light2d/wiki/FAQ).
+
 ## Contributing
 
 We greatly appreciate and encourage contributions from the community! 
 
 Please take a look at the [Contributing](https://github.com/MarkelZ/pygame-light2d/wiki/Contributing) page on the wiki for details on how to contribute to the project.
-
-## Frequently Asked Questions
-
-For frequently asked questions check out [FAQ](https://github.com/MarkelZ/pygame-light2d/wiki/FAQ).
 
 ## License
 
