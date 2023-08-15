@@ -31,16 +31,15 @@ class LightingEngine:
         # Configure pygame
         self._check_and_configure_pygame()
 
-        # Set the native and lightmap resolutions
+        # Initialize private members
         self._native_res = native_res
         self._lightmap_res = lightmap_res
-
-        # Default the ambient light to 25%
         self._ambient = (.25, .25, .25, .25)
 
-        # Initialize the light and hull lists
+        # Initialize public members
         self.lights: list[PointLight] = []
         self.hulls: list[Hull] = []
+        self.shadow_blur_radius = 5
 
         # Create an OpenGL context
         self.ctx = moderngl.create_context()
@@ -115,6 +114,9 @@ class LightingEngine:
             (screen_vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
         self._vao_mask = self.ctx.vertex_array(self._prog_mask, [
+            (screen_vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
+        ])
+        self._vao_draw = self.ctx.vertex_array(self._prog_draw, [
             (screen_vbo, '2f 2f', 'vertexPos', 'vertexTexCoord'),
         ])
 
@@ -272,9 +274,7 @@ class LightingEngine:
         self._render_to_buf_lt()
 
         # Blur lightmap for soft shadows and render onto aomap
-        self._fbo_ao.use()
-        self._buf_lt.tex.use()
-        self._vao_blur.render()
+        self._render_aomap()
 
         # Render background masked with the lightmap
         self.ctx.screen.use()
@@ -287,10 +287,9 @@ class LightingEngine:
         self._vao_mask.render()
 
         # Render foreground onto screen
-        self._render_tex_to_fbo(self._tex_fg, self.ctx.screen,
-                                pygame.Rect(0, 0, self.ctx.screen.width,
-                                            self.ctx.screen.height),
-                                pygame.Rect(0, 0, self._tex_fg.width, self._tex_fg.height))
+        self.ctx.screen.use()
+        self._tex_fg.use()
+        self._vao_draw.render()
 
     def _point_to_uv(self, p: tuple[float, float]):
         return [p[0]/self._native_res[0], 1 - (p[1]/self._native_res[1])]
@@ -396,3 +395,11 @@ class LightingEngine:
 
         # Re-enable alpha blending
         self.ctx.enable(moderngl.BLEND)
+
+    def _render_aomap(self):
+        # Use aomap FBO and light buffer texture
+        self._fbo_ao.use()
+        self._buf_lt.tex.use()
+
+        self._prog_blur['blurRadius'] = self.shadow_blur_radius
+        self._vao_blur.render()

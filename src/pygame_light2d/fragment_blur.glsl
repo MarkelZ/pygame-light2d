@@ -3,33 +3,21 @@
 in vec2 fragmentTexCoord;// holds the Vertex position <-1,+1> !!!
 uniform sampler2D imageTexture;// used texture unit
 
-// uniform width;
-// uniform height;
-
-// uniform vec2 lightPos;
+uniform float blurRadius;
 
 out vec4 color;
 
-const float blurRadius=6.;
-const int kernelSize=int(blurRadius)*2+1;
-
-const float blurAttenuation=6.;// Increase this number to make it SHARPER
-
 void main()
 {
+    int kernelSize=int(blurRadius)*2+1;
     vec2 texelSize=1./textureSize(imageTexture,0);
     
-    // Blur strength
-    // vec2 diff=lightPos-fragmentTexCoord;
-    // float blurStrength=1.+1./(blurAttenuation*dot(diff,diff)+.1);
-    float blurStrength=1.+1./(blurAttenuation+.1);
-    
     // Gaussian kernel weights
-    float weights[kernelSize];
+    float weights[64];
     float sum=0.;
     for(int i=0;i<kernelSize;++i){
         float x=float(i)-blurRadius;
-        weights[i]=exp(-.5*(x*x)*blurStrength/(blurRadius*blurRadius));
+        weights[i]=exp(-.5*(x*x)/(blurRadius*blurRadius));
         sum+=weights[i];
     }
     
