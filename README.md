@@ -51,6 +51,9 @@ We greatly appreciate and encourage contributions from the community!
 
 Please take a look at the [Contributing](https://github.com/MarkelZ/pygame-light2d/wiki/Contributing) page on the wiki for details on how to contribute to the project.
 
+## Frequently Asked Questions
+
+For frequently asked questions check out [FAQ](https://github.com/MarkelZ/pygame-light2d/wiki/FAQ).
 
 ## License
 
