@@ -27,6 +27,7 @@ class PointLight:
         self.power = power
         self.radius = radius
         self.enabled = enabled
+        self.cast_shadows = True
         self._color = [0., 0., 0., 1.]
 
     def set_color(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255) -> None:

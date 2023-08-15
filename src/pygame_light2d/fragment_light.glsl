@@ -20,6 +20,7 @@ uniform int numHulls;
 uniform vec4 lightCol;
 uniform float lightPower;
 uniform float radius;
+uniform bool castShadows;
 
 out vec4 color;
 
@@ -61,22 +62,24 @@ void main()
     
     // Check if ocluded by a hull
     bool ocluded=false;
-    int prev=0;
-    for(int i=0;i<numHulls;i++){
-        int j0=prev;
-        int jn=hullInd[i];
-        int n=jn-j0;
-        for(int j=j0;j<jn;j++){
-            int ind1=j*2;
-            int ind2=(((j+1-j0)%n)+j0)*2;
-            vec2 p=vec2(hullV[ind1],hullV[ind1+1]);
-            vec2 q=vec2(hullV[ind2],hullV[ind2+1]);
-            if(isOcluded(p,q)){
-                ocluded=true;
-                break;
+    if(castShadows){
+        int prev=0;
+        for(int i=0;i<numHulls;i++){
+            int j0=prev;
+            int jn=hullInd[i];
+            int n=jn-j0;
+            for(int j=j0;j<jn;j++){
+                int ind1=j*2;
+                int ind2=(((j+1-j0)%n)+j0)*2;
+                vec2 p=vec2(hullV[ind1],hullV[ind1+1]);
+                vec2 q=vec2(hullV[ind2],hullV[ind2+1]);
+                if(isOcluded(p,q)){
+                    ocluded=true;
+                    break;
+                }
             }
+            prev=hullInd[i];
         }
-        prev=hullInd[i];
     }
     
     // Brighten up if not ocluded

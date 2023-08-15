@@ -384,6 +384,7 @@ class LightingEngine:
             self._prog_light['lightCol'] = light._color
             self._prog_light['lightPower'] = light.power
             self._prog_light['radius'] = light.radius
+            self._prog_light['castShadows'] = light.cast_shadows
             self._prog_light['native_width'] = self._native_res[0]
             self._prog_light['native_height'] = self._native_res[1]
 
