@@ -11,11 +11,9 @@ https://github.com/MarkelZ/pygame-light2d/assets/60424316/a8d1322b-ac05-47d4-8b0
 - `moderngl` >= 5.8.2
 - `PyOpenGL` >= 3.1.6
 
-Earlier versions of these packages might also work, although they haven't been extensively tested.
-
 ## Installation
 
-Firstly, ensure that all the required dependencies are installed.
+Firstly, ensure that the correct Python version is installed.
 
 Then, run the following command:
 
