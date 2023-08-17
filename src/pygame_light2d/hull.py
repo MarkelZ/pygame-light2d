@@ -14,8 +14,8 @@ class Hull:
         Initialize a hull.
 
         Args:
-            vertices (list[tuple[float, float]]): List of vertices defining the hull's boundary.
-            illuminate_interior (bool, optional): Whether to illuminate the interior of the hull. Default is False.
+            vertices (list[tuple[float, float]]): List of vertices defining the hull's boundary in native coordinates.
+            illuminate_interior (bool, optional): This feature has not been implemented yet.
             enabled (bool, optional): Whether the hull is enabled for rendering. Default is True.
         """
 

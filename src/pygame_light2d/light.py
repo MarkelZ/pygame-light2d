@@ -19,7 +19,7 @@ class PointLight:
         Args:
             position (tuple[float, float]): Position of the light source.
             power (float, optional): Power of the light source. Default is 1.0.
-            radius (float, optional): Radius of the light source. Default is 10.0.
+            radius (float, optional): Radius of the light source in native coordinates. Default is 10.0.
             enabled (bool, optional): Whether the light source is enabled. Default is True.
         """
 

@@ -39,7 +39,7 @@ class LightingEngine:
         # Initialize public members
         self.lights: list[PointLight] = []
         self.hulls: list[Hull] = []
-        self.shadow_blur_radius = 5
+        self.shadow_blur_radius: int = 5
 
         # Create an OpenGL context
         self.ctx = moderngl.create_context()
@@ -54,10 +54,10 @@ class LightingEngine:
         self._create_frame_buffers()
 
         # Create SSBO for hull vertices
-        self.ssbo_v = self.ctx.buffer(reserve=4*2048)
-        self.ssbo_v.bind_to_uniform_block(1)
-        self.ssbo_ind = self.ctx.buffer(reserve=4*256)
-        self.ssbo_ind.bind_to_uniform_block(2)
+        self._ssbo_v = self.ctx.buffer(reserve=4*2048)
+        self._ssbo_v.bind_to_uniform_block(1)
+        self._ssbo_ind = self.ctx.buffer(reserve=4*256)
+        self._ssbo_ind.bind_to_uniform_block(2)
 
     def _check_and_configure_pygame(self):
         # Check that pygame has been initialized
@@ -145,11 +145,17 @@ class LightingEngine:
 
         Args:
             layer (Layer): The layer to apply the filter to.
-            filter (tuple[moderngl.Constant, moderngl.Constant]): The filter to apply to the texture.
+            filter (tuple[Constant, Constant]): The filter to apply to the texture, can be `NEAREST` or `LINEAR`.
         """
         self._get_tex(layer).filter = filter
 
     def set_aomap_filter(self, filter) -> None:
+        """
+        Set the aomap's filter.
+
+        Args:
+            filter (tuple[Constant, Constant]): The filter to apply to the texture, can be `NEAREST` or `LINEAR`.
+        """
         self._tex_ao.filter = filter
 
     def set_ambient(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255) -> None:
@@ -360,11 +366,11 @@ class LightingEngine:
         # Store hull vertex data in SSBO
         vertices = [self._point_to_uv(v) for v in vertices]
         data_v = np.array(vertices, dtype=np.float32).flatten().tobytes()
-        self.ssbo_v.write(data_v)
+        self._ssbo_v.write(data_v)
 
         # Store hull vertex indices in SSBO
         data_ind = np.array(indices, dtype=np.int32).flatten().tobytes()
-        self.ssbo_ind.write(data_ind)
+        self._ssbo_ind.write(data_ind)
 
     def _render_to_buf_lt(self):
         # Disable alpha blending to render lights
