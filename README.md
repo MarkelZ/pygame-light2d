@@ -31,7 +31,7 @@ If there are no errors, the installation was successful!
 
 ## Getting started
 
-To learn how to create a simple game with lighting effects using `pygame-light2d`, check out the [`Getting started`](https://github.com/MarkelZ/pygame-light2d/wiki/Getting-Started) page on the wiki.
+To learn how to create a simple game with lighting effects using `pygame-light2d`, check out the [Getting started](https://github.com/MarkelZ/pygame-light2d/wiki/Getting-Started) page on the wiki.
 
 ## Documentation
 
