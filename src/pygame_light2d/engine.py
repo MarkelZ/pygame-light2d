@@ -54,10 +54,7 @@ class LightingEngine:
         self._create_frame_buffers()
 
         # Create SSBO for hull vertices
-        self._ssbo_v = self.ctx.buffer(reserve=4*2048)
-        self._ssbo_v.bind_to_uniform_block(1)
-        self._ssbo_ind = self.ctx.buffer(reserve=4*256)
-        self._ssbo_ind.bind_to_uniform_block(2)
+        self._create_ssbos()
 
     def _check_and_configure_pygame(self):
         # Check that pygame has been initialized
@@ -138,6 +135,12 @@ class LightingEngine:
             self._lightmap_res, components=4, dtype='f2')
         self._tex_ao.filter = (moderngl.LINEAR, moderngl.LINEAR)
         self._fbo_ao = self.ctx.framebuffer([self._tex_ao])
+
+    def _create_ssbos(self):
+        self._ssbo_v = self.ctx.buffer(reserve=4*2048)
+        self._ssbo_v.bind_to_uniform_block(1)
+        self._ssbo_ind = self.ctx.buffer(reserve=4*256)
+        self._ssbo_ind.bind_to_uniform_block(2)
 
     def set_filter(self, layer: Layer, filter) -> None:
         """
@@ -286,19 +289,10 @@ class LightingEngine:
         self._render_aomap()
 
         # Render background masked with the lightmap
-        self.ctx.screen.use()
-        self._tex_bg.use()
-
-        self._tex_ao.use(1)
-        self._prog_mask['lightmap'].value = 1
-        self._prog_mask['ambient'].value = self._ambient
-
-        self._vao_mask.render()
+        self._render_background()
 
         # Render foreground onto screen
-        self.ctx.screen.use()
-        self._tex_fg.use()
-        self._vao_draw.render()
+        self._render_foreground()
 
     def _point_to_uv(self, p: tuple[float, float]):
         return [p[0]/self._native_res[0], 1 - (p[1]/self._native_res[1])]
@@ -413,3 +407,18 @@ class LightingEngine:
 
         self._prog_blur['blurRadius'] = self.shadow_blur_radius
         self._vao_blur.render()
+
+    def _render_background(self):
+        self.ctx.screen.use()
+        self._tex_bg.use()
+
+        self._tex_ao.use(1)
+        self._prog_mask['lightmap'].value = 1
+        self._prog_mask['ambient'].value = self._ambient
+
+        self._vao_mask.render()
+
+    def _render_foreground(self):
+        self.ctx.screen.use()
+        self._tex_fg.use()
+        self._vao_draw.render()
