@@ -3,7 +3,7 @@ from enum import Enum
 import numpy as np
 import moderngl
 import pygame
-from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST
+from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST, glGetUniformBlockIndex, glUniformBlockBinding
 
 from pygame_light2d.light import PointLight
 from pygame_light2d.hull import Hull
@@ -137,6 +137,16 @@ class LightingEngine:
         self._fbo_ao = self.ctx.framebuffer([self._tex_ao])
 
     def _create_ssbos(self):
+        # Set block indices for the SSBOS in the shader program
+        prog_glo = self._prog_light.glo
+
+        blockIndex = glGetUniformBlockIndex(prog_glo, 'hullVSSBO')
+        glUniformBlockBinding(prog_glo, blockIndex, 1)
+
+        blockIndex = glGetUniformBlockIndex(prog_glo, 'hullIndSSBO')
+        glUniformBlockBinding(prog_glo, blockIndex, 2)
+
+        # Create SSBOs
         self._ssbo_v = self.ctx.buffer(reserve=4*2048)
         self._ssbo_v.bind_to_uniform_block(1)
         self._ssbo_ind = self.ctx.buffer(reserve=4*256)
