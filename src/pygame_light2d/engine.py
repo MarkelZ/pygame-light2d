@@ -67,6 +67,12 @@ class LightingEngine:
             raise RuntimeError(
                 'Error: Pygame window not initialized. Please create a pygame window before starting the lighting engine.')
 
+        # Set OpenGL version to 3.3 core
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+        pygame.display.gl_set_attribute(
+            pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
+
         # Configure pygame display
         pygame.display.set_mode(
             screen_size, pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF)
