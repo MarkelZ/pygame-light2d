@@ -19,7 +19,7 @@ class Layer(Enum):
 class LightingEngine:
     """A class for managing lighting effects within a Pygame environment."""
 
-    def __init__(self, native_res: tuple[int, int], lightmap_res: tuple[int, int]) -> None:
+    def __init__(self, screen_res: tuple[int, int], native_res: tuple[int, int], lightmap_res: tuple[int, int]) -> None:
         """
         Initialize the lighting engine.
 
@@ -28,10 +28,8 @@ class LightingEngine:
             lightmap_res (tuple[int, int]): Lightmap resolution (width, height).
         """
 
-        # Configure pygame
-        self._check_and_configure_pygame()
-
         # Initialize private members
+        self._screen_res = screen_res
         self._native_res = native_res
         self._lightmap_res = lightmap_res
         self._ambient = (.25, .25, .25, .25)
@@ -40,6 +38,9 @@ class LightingEngine:
         self.lights: list[PointLight] = []
         self.hulls: list[Hull] = []
         self.shadow_blur_radius: int = 5
+
+        # Configure pygame
+        self._check_and_configure_pygame()
 
         # Create an OpenGL context
         self.ctx = moderngl.create_context()
@@ -60,16 +61,15 @@ class LightingEngine:
         # Check that pygame has been initialized
         assert pygame.get_init(), 'Error: Pygame is not initialized. Please ensure you call pygame.init() before using the lighting engine.'
 
-        # Try to get the current screen resolution
-        try:
-            screen_size = pygame.display.get_window_size()
-        except:
-            raise RuntimeError(
-                'Error: Pygame window not initialized. Please create a pygame window before starting the lighting engine.')
+        # Set OpenGL version to 3.3 core
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+        pygame.display.gl_set_attribute(
+            pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
 
         # Configure pygame display
         pygame.display.set_mode(
-            screen_size, pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF)
+            self._screen_res, pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF)
 
     def _load_shaders(self):
         # Read source files

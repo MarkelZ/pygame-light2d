@@ -7,27 +7,17 @@ import random
 import pygame_light2d as pl2d
 from pygame_light2d import LightingEngine, PointLight, Hull
 
-
-# Screen resolution
-screen_width = 1280
-screen_height = 720
-screen_res = (screen_width, screen_height)
-
-# Native resolution
-native_width = 320
-native_height = 180
-native_res = (native_width, native_height)
-
 # Initialize pygame
 pygame.init()
-pygame.display.set_mode(screen_res)
+
+# Create lights engine
+screen_res = (1280, 720)
+native_res = (320, 180)
+lights_engine = LightingEngine(
+    screen_res=screen_res, native_res=native_res, lightmap_res=native_res)
 
 # Initialize the clock
 clock = pygame.time.Clock()
-
-# Create lights engine
-lights_engine = LightingEngine(
-    native_res=native_res, lightmap_res=native_res)
 
 # Set the ambient light
 lights_engine.set_ambient(128, 128, 128, 128)
@@ -85,8 +75,8 @@ while running:
     # Mouse pointer's position on the screen
     mp = pygame.mouse.get_pos()
     # Convert to native coordinates
-    mouse_native_pos = [mp[0]*native_width/screen_width,
-                        mp[1] * native_height/screen_height]
+    mouse_native_pos = [mp[0]*native_res[0]/screen_res[0],
+                        mp[1] * native_res[1]/screen_res[1]]
     # Assign the mouse pointer's position to the light
     light.position = mouse_native_pos
 
@@ -96,7 +86,7 @@ while running:
     # Draw background image
     lights_engine.render_texture(
         tex_background, pl2d.BACKGROUND,
-        pygame.Rect(0, 0, native_width, native_height),
+        pygame.Rect(0, 0, native_res[0], native_res[1]),
         pygame.Rect(0, 0, tex_background.width, tex_background.height))
 
     # Render text displaying the number of lights onto a Pygame surface
