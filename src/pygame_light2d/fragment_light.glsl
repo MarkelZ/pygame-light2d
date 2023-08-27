@@ -1,4 +1,4 @@
-#version 450 core
+#version 330 core
 
 in vec2 fragmentTexCoord;// top-left is [0, 1] and bottom-right is [1, 0]
 uniform sampler2D imageTexture;// used texture unit
@@ -8,11 +8,11 @@ uniform int native_height;
 
 uniform vec2 lightPos;
 
-layout(binding=1)uniform hullVSSBO{
+uniform hullVSSBO{
     float hullV[2048];
 };
 
-layout(binding=2)uniform hullIndSSBO{
+uniform hullIndSSBO{
     int hullInd[256];
 };
 uniform int numHulls;
