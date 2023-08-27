@@ -48,4 +48,4 @@ __all__ = ['LightingEngine', 'PointLight', 'Hull', 'Layer'
            'BACKGROUND', 'FOREGROUND', 'NEAREST', 'LINEAR']
 
 # Version of the pygame_light2d package
-__version__ = '1.1.0'
+__version__ = '1.2.0'
