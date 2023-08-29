@@ -6,14 +6,11 @@ from pygame_light2d import LightingEngine, PointLight, Hull
 # Initialize pygame
 pygame.init()
 
-# Set 720p screen resolution
-screen_res = (1280, 720)
-pygame.display.set_mode(screen_res)
-
 # Create a lighting engine
+screen_res = (1280, 720)
 native_res = (320, 180)
 lights_engine = LightingEngine(
-    native_res=native_res, lightmap_res=native_res)
+    screen_res=screen_res, native_res=native_res, lightmap_res=native_res)
 
 # Set the ambient light to 50%
 lights_engine.set_ambient(128, 128, 128, 128)

@@ -8,21 +8,16 @@ import pygame_light2d as pl2d
 from pygame_light2d import LightingEngine, PointLight, Hull
 
 
-# Screen resolution
-screen_width = 1280
-screen_height = 720
-screen_res = (screen_width, screen_height)
-
 # Initialize pygame
 pygame.init()
-pygame.display.set_mode(screen_res)
+
+# Create lights engine with the lightmap downscaled by 2.5
+screen_res = (1280, 720)
+lights_engine = LightingEngine(
+    screen_res=screen_res, native_res=screen_res, lightmap_res=(int(screen_res[0]/2.5), int(screen_res[1]/2.5)))
 
 # Initialize the clock
 clock = pygame.time.Clock()
-
-# Create lights engine with the lightmap downscaled by 2.5
-lights_engine = LightingEngine(
-    native_res=screen_res, lightmap_res=(int(screen_width/2.5), int(screen_height/2.5)))
 
 # Set the ambient light
 lights_engine.set_ambient(128, 128, 128, 128)
@@ -113,7 +108,7 @@ while running:
     # Draw background image
     lights_engine.render_texture(
         tex_background, pl2d.BACKGROUND,
-        pygame.Rect(0, 0, screen_width, screen_height),
+        pygame.Rect(0, 0, screen_res[0], screen_res[1]),
         pygame.Rect(0, 0, tex_background.width, tex_background.height))
 
     # Render text displaying the number of lights onto a Pygame surface
