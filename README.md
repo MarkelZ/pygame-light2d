@@ -3,9 +3,13 @@ This module provides fast 2D dynamic lighting for `pygame`.
 
 https://github.com/MarkelZ/pygame-light2d/assets/60424316/a8d1322b-ac05-47d4-8b04-2786f0d3c96a
 
-## Dependencies
+## System requirements
 
 - `Python` version >= 3.10
+- `OpenGL` version >= 3.3
+
+## Python package dependencies
+
 - `numpy` >= 1.24.1
 - `pygame` >= 2.3.0
 - `moderngl` >= 5.8.2
@@ -13,7 +17,7 @@ https://github.com/MarkelZ/pygame-light2d/assets/60424316/a8d1322b-ac05-47d4-8b0
 
 ## Installation
 
-Firstly, ensure that the correct Python version is installed.
+Firstly, ensure that your system meets the [System requirements](#system-requirements).
 
 Then, run the following command:
 
