@@ -101,6 +101,9 @@ while running:
     lights_engine.render_texture(
         text_tex, pl2d.FOREGROUND, text_rect, text_rect)
 
+    # Free the temporary texture from the memory
+    text_tex.release()
+
     # Render the scene
     lights_engine.render()
 
