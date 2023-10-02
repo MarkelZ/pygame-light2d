@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pygame-light2d"
-version = "2.0.1"
+version = "2.0.2"
 description = "Fast 2D dynamic lighting engine for Pygame."
 readme = "README.md"
 authors = [{ name = "Markel Zubia" }]
