@@ -357,6 +357,10 @@ class LightingEngine:
         fbo.use()
         vao.render()
 
+        # Free vertex data
+        vbo.release()
+        vao.release()
+
     def _send_hull_data(self):
         # Lists with hull vertices and indices
         vertices = []
