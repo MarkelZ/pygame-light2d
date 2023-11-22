@@ -15,12 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 keywords = ["pygame", "light", "lights", "engine", "shadows", "dynamic", "2D"]
-dependencies = [
-    "numpy>=1.24.1",
-    "pygame>=2.3.0",
-    "moderngl>=5.8.2",
-    "PyOpenGL>=3.1.6",
-]
+dependencies = ["numpy>=1.22.0", "pygame>=2.1.0", "moderngl>=5.8.2"]
 requires-python = ">=3.10"
 
 [project.urls]
