@@ -38,6 +38,7 @@ class LightingEngine:
         self.lights: list[PointLight] = []
         self.hulls: list[Hull] = []
         self.shadow_blur_radius: int = 5
+        self.max_luminosity: float = 2.5
 
         # Configure pygame
         self._check_and_configure_pygame()
@@ -427,6 +428,7 @@ class LightingEngine:
         self._tex_bg.use()
 
         self._tex_ao.use(1)
+        self._prog_mask['maxLuminosity'].value = self.max_luminosity
         self._prog_mask['lightmap'].value = 1
         self._prog_mask['ambient'].value = self._ambient
 
