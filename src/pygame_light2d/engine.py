@@ -192,7 +192,11 @@ class LightingEngine:
 
         # Render texture onto layer with the draw shader
         layer = self._get_layer(layer)
-        self._graphics.render(tex, layer)  # TODO
+        self._graphics.render(tex, layer,
+                              position=(dest.x, dest.y),
+                              scale=(dest.width / tex.width,
+                                     dest.height / tex.height),
+                              section=source)
 
     def surface_to_texture(self, sfc: pygame.Surface) -> moderngl.Texture:
         """
@@ -230,7 +234,6 @@ class LightingEngine:
             B (int): Blue component value (0-255).
             A (int): Alpha component value (0-255).
         """
-        R, G, B, A = normalize_color_arguments(R, G, B, A)
         self._layer_bg.clear(R, G, B, A)
         self._layer_fg.clear(0, 0, 0, 0)
 
@@ -303,7 +306,8 @@ class LightingEngine:
                 continue
 
             # Send light uniforms
-            self._prog_light['lightPos'] = self._point_to_uv(light.position)
+            self._prog_light['lightPos'] = self._point_to_uv(
+                light.position)
             self._prog_light['lightCol'] = light._color
             self._prog_light['lightPower'] = light.power
             self._prog_light['radius'] = light.radius
@@ -326,17 +330,23 @@ class LightingEngine:
 
     def _render_aomap(self):
         # Use aomap FBO and light buffer texture
+        self._prog_blur['blurRadius'] = self.shadow_blur_radius
         self._graphics.render(
             self._buf_lt.tex, self._layer_ao, shader=self._prog_blur)
 
     def _render_background(self):
-        self._prog_mask['lightmap']
+        self._prog_mask['lightmap'] = self._layer_ao.texture
         self._prog_mask['maxLuminosity'].value = self.max_luminosity
         self._prog_mask['lightmap'].value = 1
         self._prog_mask['ambient'].value = self._ambient
 
         self._graphics.render(self._layer_bg.texture,
-                              self._graphics.screen, shader=self._prog_mask)
+                              self._graphics.screen,
+                              scale=(
+                                  self._screen_res[0]/self._native_res[0], self._screen_res[1]/self._native_res[1]),
+                              shader=self._prog_mask)
 
     def _render_foreground(self):
-        self._graphics.render(self._layer_fg.texture, self._graphics.screen)
+        self._graphics.render(self._layer_fg.texture, self._graphics.screen,
+                              scale=(
+                                  self._screen_res[0]/self._native_res[0], self._screen_res[1]/self._native_res[1]))
