@@ -1,3 +1,4 @@
+import random
 from enum import Enum
 from importlib import resources
 import moderngl
@@ -14,7 +15,7 @@ from pygame_light2d.hull import Hull
 from pygame_light2d.double_buff import DoubleBuff
 
 
-class Layer(Enum):
+class DrawLayer(Enum):
     BACKGROUND = 1,
     FOREGROUND = 2,
 
@@ -22,13 +23,26 @@ class Layer(Enum):
 class LightingEngine:
     """A class for managing lighting effects within a Pygame environment."""
 
-    def __init__(self, screen_res: tuple[int, int], native_res: tuple[int, int], lightmap_res: tuple[int, int]) -> None:
+    def __init__(self, screen_res: tuple[int, int],
+                 native_res: tuple[int, int],
+                 lightmap_res: tuple[int, int],
+                 fullscreen: int | bool = 0, resizable: int | bool = 0,
+                 noframe: int | bool = 0, scaled: int | bool = 0,
+                 depth: int = 0, display: int = 0, vsync: int = 0) -> None:
         """
         Initialize the lighting engine.
 
         Args:
+            screen_res (tuple[int, int]): resolution of the screen (width, height).
             native_res (tuple[int, int]): Native resolution of the game (width, height).
             lightmap_res (tuple[int, int]): Lightmap resolution (width, height).
+            fullscreen (int or bool, optional): Set to 1 or True to enable fullscreen mode, 0 or False to disable. Default is 0.
+            resizable (int or bool, optional): Set to 1 or True to enable window resizing, 0 or False to disable. Default is 0.
+            noframe (int or bool, optional): Set to 1 or True to remove window frame, 0 or False to keep the frame. Default is 0.
+            scaled (int or bool, optional): Set to 1 or True to enable display scaling, 0 or False to disable. Default is 0.
+            depth (int, optional): Depth of the rendering window. Default is 0.
+            display (int, optional): The display index to use. Default is 0.
+            vsync (int, optional): Set to 1 to enable vertical synchronization, 0 to disable. Default is 0.
         """
 
         # Initialize private members
@@ -44,7 +58,10 @@ class LightingEngine:
         self.max_luminosity: float = 2.5
 
         # Initialize shader engine
-        self._graphics = RenderEngine(screen_res[0], screen_res[1])
+        self._graphics = RenderEngine(screen_res[0], screen_res[1],
+                                      fullscreen=fullscreen, resizable=resizable,
+                                      noframe=noframe, scaled=scaled, depth=depth,
+                                      display=display, vsync=vsync)
 
         # Load shaders
         self._load_shaders()
@@ -126,7 +143,7 @@ class LightingEngine:
         """Get the ModernGL rendering context."""
         return self._graphics.ctx
 
-    def set_filter(self, layer: Layer, filter: tuple) -> None:
+    def set_filter(self, layer: DrawLayer, filter: tuple) -> None:
         """
         Set the filter for a specific layer's texture.
 
@@ -166,7 +183,7 @@ class LightingEngine:
         """
         return denormalize_color(self._ambient)
 
-    def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
+    def blit_texture(self, tex: moderngl.Texture, layer: DrawLayer, dest: pygame.Rect, source: pygame.Rect):
         """
         Blit a texture onto a specified layer's framebuffer.
 
@@ -191,7 +208,7 @@ class LightingEngine:
             'blit_texture is deprecated, please use render_texture', UserWarning)
         self.render_texture(tex, layer, dest, source)
 
-    def render_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
+    def render_texture(self, tex: moderngl.Texture, layer: DrawLayer, dest: pygame.Rect, source: pygame.Rect):
         """
         Render a texture onto a specified layer's framebuffer using the draw shader.
 
@@ -204,11 +221,38 @@ class LightingEngine:
 
         # Render texture onto layer with the draw shader
         layer = self._get_layer(layer)
-        self._graphics.render(tex, layer,
-                              position=(dest.x, dest.y),
-                              scale=(dest.width / tex.width,
-                                     dest.height / tex.height),
-                              section=source)
+        dest_vertices = [(dest.x + dest.width, dest.y + dest.height),
+                         (dest.x, dest.y + dest.height),
+                         (dest.x, dest.y),
+                         (dest.x + dest.width, dest.y)]
+        section_vertices = [(source.x, source.y),
+                            (source.x + source.width, source.y),
+                            (source.x, source.y + source.height),
+                            (source.x + source.width, source.y + source.height)]
+        self._graphics.render_from_vertices(
+            tex, layer, dest_vertices, section_vertices)
+
+    def render_transformed(self, tex: moderngl.Texture, layer: DrawLayer,
+                           position: tuple[float, float] = (0, 0),
+                           scale: tuple[float, float] | float = (1.0, 1.0),
+                           angle: float = 0.0,
+                           flip: tuple[bool, bool] | bool = (False, False),
+                           section: pygame.Rect | None = None):
+        """
+        Render a transformed texture onto a specified layer's framebuffer using the draw shader.
+
+        Args:
+            tex (moderngl.Texture): Texture to render.
+            layer (Layer): Layer to render the texture onto.
+            position (tuple[float, float]): The position (x, y) where the texture will be rendered. Default is (0, 0).
+            scale (tuple[float, float] | float): The scaling factor for the texture. Can be a tuple (x, y) or a scalar. Default is (1.0, 1.0).
+            angle (float): The rotation angle in degrees. Default is 0.0.
+            flip (tuple[bool, bool] | bool): Whether to flip the texture. Can be a tuple (flip x axis, flip y axis) or a boolean (flip x axis). Default is (False, False).
+            section (pygame.Rect | None): The section of the texture to render. If None, the entire texture is rendered. Default is None.
+        """
+        layer = self._get_layer(layer)
+        self._graphics.render(tex, layer, position,
+                              scale, angle, flip, section)
 
     def surface_to_texture(self, sfc: pygame.Surface) -> moderngl.Texture:
         """
@@ -282,10 +326,10 @@ class LightingEngine:
     def _point_to_uv(self, p: tuple[float, float]):
         return [p[0]/self._native_res[0], 1 - (p[1]/self._native_res[1])]
 
-    def _get_layer(self, layer: Layer):
-        if layer == Layer.BACKGROUND:
+    def _get_layer(self, layer: DrawLayer):
+        if layer == DrawLayer.BACKGROUND:
             return self._layer_bg
-        elif layer == Layer.FOREGROUND:
+        elif layer == DrawLayer.FOREGROUND:
             return self._layer_fg
 
     def _send_hull_data(self):
