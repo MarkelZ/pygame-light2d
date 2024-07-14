@@ -33,7 +33,7 @@ except Exception as e:
     raise ImportError(f'Error importing OpenGL: {e}')
 
 try:
-    from pygame_render import RenderEngine
+    from pygame_render import RenderEngine, Layer
     from pygame_render.util import normalize_color_arguments, denormalize_color
 except ImportError:
     raise ImportError('Missing package: pygame_render.')
@@ -41,17 +41,17 @@ except Exception as e:
     raise ImportError(f'Error importing pygame_render: {e}')
 
 # Local modules
-from .engine import LightingEngine, Layer
+from .engine import LightingEngine, DrawLayer
 from .hull import Hull
 from .light import PointLight
 
-BACKGROUND = Layer.BACKGROUND
-FOREGROUND = Layer.FOREGROUND
+BACKGROUND = DrawLayer.BACKGROUND
+FOREGROUND = DrawLayer.FOREGROUND
 
 NEAREST = moderngl.NEAREST
 LINEAR = moderngl.LINEAR
 
-__all__ = ['LightingEngine', 'PointLight', 'Hull', 'Layer'
+__all__ = ['LightingEngine', 'PointLight', 'Hull', 'DrawLayer', 'Layer'
            'BACKGROUND', 'FOREGROUND', 'NEAREST', 'LINEAR']
 
 # Version of the pygame_light2d package
