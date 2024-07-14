@@ -47,6 +47,11 @@ For detailed explanations of the API, please refer to the [API Reference](https:
 
 If you're looking to incorporate `pygame-ligth2d` into an existing project, we recommend starting with our guide on [Adding lights to an existing project](https://github.com/MarkelZ/pygame-light2d/wiki/Adding-lights-to-an-existing-project).
 
+## Graphics engine
+
+This package uses [pygame-render](https://github.com/MarkelZ/pygame-render) for
+using shaders in `pygame`, and it can be accessed with `LightingEngine.graphics`.
+
 ## Frequently Asked Questions
 
 For frequently asked questions check out [FAQ](https://github.com/MarkelZ/pygame-light2d/wiki/FAQ).
