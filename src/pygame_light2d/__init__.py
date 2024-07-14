@@ -32,6 +32,13 @@ except ImportError:
 except Exception as e:
     raise ImportError(f'Error importing OpenGL: {e}')
 
+try:
+    from pygame_render import RenderEngine
+    from pygame_render.util import normalize_color_arguments, denormalize_color
+except ImportError:
+    raise ImportError('Missing package: pygame_render.')
+except Exception as e:
+    raise ImportError(f'Error importing pygame_render: {e}')
 
 # Local modules
 from .engine import LightingEngine, Layer

@@ -1,4 +1,4 @@
-from pygame_light2d.color import normalize_color_arguments, denormalize_color
+from pygame_render.util import normalize_color_arguments, denormalize_color
 
 
 class PointLight:
