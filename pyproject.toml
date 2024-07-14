@@ -20,7 +20,7 @@ dependencies = [
     "pygame>=2.3.0",
     "moderngl>=5.8.2",
     "PyOpenGL>=3.1.6",
-    "pygame-render>=1.2.3",
+    "pygame-render>=1.3.0",
 ]
 requires-python = ">=3.10"
 

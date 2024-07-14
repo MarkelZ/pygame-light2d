@@ -2,8 +2,9 @@ from enum import Enum
 from importlib import resources
 import moderngl
 import numpy as np
-from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST, glGetUniformBlockIndex, glUniformBlockBinding
+# from OpenGL.GL import glBlitNamedFramebuffer, GL_COLOR_BUFFER_BIT, GL_NEAREST, glGetUniformBlockIndex, glUniformBlockBinding
 import pygame
+import warnings
 
 from pygame_render import RenderEngine
 from pygame_render.util import normalize_color_arguments, denormalize_color
@@ -96,7 +97,7 @@ class LightingEngine:
             self._native_res, components=4)
 
         # Double buffer for lights
-        self._buf_lt = DoubleBuff(self._graphics, self._lightmap_res)  # TODO
+        self._buf_lt = DoubleBuff(self._graphics, self._lightmap_res)
 
         # Ambient occlussion map
         self._layer_ao = self._graphics.make_layer(
@@ -115,7 +116,17 @@ class LightingEngine:
             ubo_name='hullIndSSBO',
             nbytes=max_num_hulls)
 
-    def set_filter(self, layer: Layer, filter) -> None:
+    @property
+    def graphics(self) -> RenderEngine:
+        """Get the graphics engine."""
+        return self._graphics
+
+    @property
+    def ctx(self) -> moderngl.Context:
+        """Get the ModernGL rendering context."""
+        return self._graphics.ctx
+
+    def set_filter(self, layer: Layer, filter: tuple) -> None:
         """
         Set the filter for a specific layer's texture.
 
@@ -123,16 +134,16 @@ class LightingEngine:
             layer (Layer): The layer to apply the filter to.
             filter (tuple[Constant, Constant]): The filter to apply to the texture, can be `NEAREST` or `LINEAR`.
         """
-        self._get_tex(layer).filter = filter  # TODO
+        self._get_layer(layer).texture.filter = filter
 
-    def set_aomap_filter(self, filter) -> None:
+    def set_aomap_filter(self, filter: tuple) -> None:
         """
         Set the aomap's filter.
 
         Args:
             filter (tuple[Constant, Constant]): The filter to apply to the texture, can be `NEAREST` or `LINEAR`.
         """
-        self._tex_ao.filter = filter  # TODO
+        self._layer_ao.texture.filter = filter
 
     def set_ambient(self, R: (int | tuple[int]) = 0, G: int = 0, B: int = 0, A: int = 255) -> None:
         """
@@ -144,7 +155,7 @@ class LightingEngine:
             B (int): Blue component value (0-255).
             A (int): Alpha component value (0-255).
         """
-        self._ambient = normalize_color_arguments(R, G, B, A)  # TODO
+        self._ambient = normalize_color_arguments(R, G, B, A)
 
     def get_ambient(self) -> tuple[int, int, int, int]:
         """
@@ -153,7 +164,7 @@ class LightingEngine:
         Returns:
             tuple[int, int, int, int]: Ambient light color in 0-255 scale (R, G, B, A).
         """
-        return denormalize_color(self._ambient)  # TODO
+        return denormalize_color(self._ambient)
 
     def blit_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
         """
@@ -176,7 +187,8 @@ class LightingEngine:
         # glBlitNamedFramebuffer(fb.glo, fbo.glo, source.x, source.y, source.w, source.h,
         #                        dest.x, dest.y, dest.w, dest.h, GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
-        print('blit_texture is deprecated, please use render_texture')  # TODO
+        warnings.warn(
+            'blit_texture is deprecated, please use render_texture', UserWarning)
         self.render_texture(tex, layer, dest, source)
 
     def render_texture(self, tex: moderngl.Texture, layer: Layer, dest: pygame.Rect, source: pygame.Rect):
@@ -297,8 +309,7 @@ class LightingEngine:
 
     def _render_to_buf_lt(self):
         # Disable alpha blending to render lights
-        # In future versions of pygame_render, this method is called RenderEngine.use_alpha_blending
-        self._graphics.ctx.disable(moderngl.BLEND)
+        self._graphics.use_alpha_blending(False)
 
         for light in self.lights:
             # Skip light if disabled
@@ -326,7 +337,7 @@ class LightingEngine:
             self._buf_lt.flip()
 
         # Re-enable alpha blending
-        self._graphics.ctx.enable(moderngl.BLEND)
+        self._graphics.use_alpha_blending(True)
 
     def _render_aomap(self):
         # Use aomap FBO and light buffer texture
