@@ -340,10 +340,14 @@ class LightingEngine:
         self._graphics.use_alpha_blending(True)
 
     def _render_aomap(self):
-        # Use aomap FBO and light buffer texture
-        self._prog_blur['blurRadius'] = self.shadow_blur_radius
-        self._graphics.render(
-            self._buf_lt.tex, self._layer_ao, shader=self._prog_blur)
+        # Render light buffer texture to aomap with blur
+        if self.shadow_blur_radius <= 0:
+            self._graphics.render(
+                self._buf_lt.tex, self._layer_ao)
+        else:
+            self._prog_blur['blurRadius'] = self.shadow_blur_radius
+            self._graphics.render(
+                self._buf_lt.tex, self._layer_ao, shader=self._prog_blur)
 
     def _render_background(self):
         self._prog_mask['lightmap'] = self._layer_ao.texture
