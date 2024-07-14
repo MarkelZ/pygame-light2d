@@ -25,6 +25,9 @@ lights_engine.set_ambient(128, 128, 128, 128)
 # Load the background image
 tex_background = lights_engine.load_texture('assets/puppies.png')
 
+# Set the maximum luminosity
+lights_engine.max_luminosity = 1
+
 
 # Generate a random color
 def random_color():

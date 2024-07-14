@@ -40,7 +40,7 @@ class LightingEngine:
         # Initialize public members
         self.lights: list[PointLight] = []
         self.hulls: list[Hull] = []
-        self.shadow_blur_radius: int = 5
+        self.shadow_blur_radius: int = 3
         self.max_luminosity: float = 2.5
 
         # Initialize shader engine
