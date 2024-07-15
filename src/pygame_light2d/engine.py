@@ -7,7 +7,7 @@ import numpy as np
 import pygame
 import warnings
 
-from pygame_render import RenderEngine
+from pygame_render import RenderEngine, Layer
 from pygame_render.util import normalize_color_arguments, denormalize_color
 
 from pygame_light2d.light import PointLight
@@ -303,8 +303,15 @@ class LightingEngine:
         This method is responsible for the final rendering of lighting effects onto the screen.
         """
 
+        self.render_to_layer(self._graphics.screen)
+
+    def render_to_layer(self, layer: Layer):
+        """
+        ...
+        """
+
         # Clear intermediate buffers
-        self._graphics.screen.clear(0, 0, 0, 1)
+        layer.clear(0, 0, 0, 1)
         self._layer_ao.clear(0, 0, 0, 0)
         self._buf_lt.clear(0, 0, 0, 0)
 
@@ -318,10 +325,10 @@ class LightingEngine:
         self._render_aomap()
 
         # Render background masked with the lightmap
-        self._render_background()
+        self._render_background(layer)
 
         # Render foreground onto screen
-        self._render_foreground()
+        self._render_foreground(layer)
 
     def _point_to_uv(self, p: tuple[float, float]):
         return [p[0]/self._native_res[0], 1 - (p[1]/self._native_res[1])]
@@ -393,19 +400,19 @@ class LightingEngine:
             self._graphics.render(
                 self._buf_lt.tex, self._layer_ao, shader=self._prog_blur)
 
-    def _render_background(self):
+    def _render_background(self, layer):
         self._prog_mask['lightmap'] = self._layer_ao.texture
         self._prog_mask['maxLuminosity'].value = self.max_luminosity
         self._prog_mask['lightmap'].value = 1
         self._prog_mask['ambient'].value = self._ambient
 
         self._graphics.render(self._layer_bg.texture,
-                              self._graphics.screen,
+                              layer,
                               scale=(
                                   self._screen_res[0]/self._native_res[0], self._screen_res[1]/self._native_res[1]),
                               shader=self._prog_mask)
 
-    def _render_foreground(self):
-        self._graphics.render(self._layer_fg.texture, self._graphics.screen,
+    def _render_foreground(self, layer):
+        self._graphics.render(self._layer_fg.texture, layer,
                               scale=(
                                   self._screen_res[0]/self._native_res[0], self._screen_res[1]/self._native_res[1]))
