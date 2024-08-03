@@ -72,20 +72,6 @@ class LightingEngine:
         # Create SSBO for hull vertices
         self._create_ssbos()
 
-    def _check_and_configure_pygame(self):
-        # Check that pygame has been initialized
-        assert pygame.get_init(), 'Error: Pygame is not initialized. Please ensure you call pygame.init() before using the lighting engine.'
-
-        # Set OpenGL version to 3.3 core
-        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
-        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
-        pygame.display.gl_set_attribute(
-            pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
-
-        # Configure pygame display
-        pygame.display.set_mode(
-            self._screen_res, pygame.HWSURFACE | pygame.OPENGL | pygame.DOUBLEBUF)
-
     def _load_shaders(self):
         # Read source files
         package_name = 'pygame_light2d'
@@ -120,6 +106,18 @@ class LightingEngine:
         self._layer_ao = self._graphics.make_layer(
             self._lightmap_res, components=4, dtype='f2')
         self._layer_ao.texture.filter = (moderngl.LINEAR, moderngl.LINEAR)
+
+        # Disable texture wrapping
+        self._buf_lt._layer1.texture.repeat_x = False
+        self._buf_lt._layer1.texture.repeat_y = False
+        self._buf_lt._layer2.texture.repeat_x = False
+        self._buf_lt._layer2.texture.repeat_y = False
+        self._layer_ao.texture.repeat_x = False
+        self._layer_ao.texture.repeat_y = False
+        self._layer_bg.texture.repeat_x = False
+        self._layer_bg.texture.repeat_y = False
+        self._layer_fg.texture.repeat_x = False
+        self._layer_fg.texture.repeat_y = False
 
     def _create_ssbos(self, max_num_hulls=256):
         # Create SSBOs
