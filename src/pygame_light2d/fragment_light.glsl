@@ -31,23 +31,24 @@ vec2 uv_to_world(vec2 v){
 bool isOcluded(vec2 p,vec2 q){
     vec2 v1=q-p;
     vec2 v2=lightPos-fragmentTexCoord;
+
     float crossProduct=v1.x*v2.y-v1.y*v2.x;
-    float dotProduct=v1.x*v2.x+v1.y*v2.y;
-    float lengthV1=length(v1);
-    float lengthV2=length(v2);
-    float t=(v2.x*(p.y-fragmentTexCoord.y)+v2.y*(fragmentTexCoord.x-p.x))/crossProduct;
-    vec2 intersection=p+t*v1;
     if(crossProduct==0.){
         return false;
     }
-    if(distance(p,intersection)>lengthV1||distance(q,intersection)>lengthV1){
+    
+    float t=(v2.x*(p.y-fragmentTexCoord.y)+v2.y*(fragmentTexCoord.x-p.x))/crossProduct;
+    if(t<0||1<t){
         return false;// The intersection point is not between p and q
     }
-    if(distance(fragmentTexCoord,intersection)>lengthV2||distance(lightPos,intersection)>lengthV2){
+
+    float u=(v1.x*(fragmentTexCoord.y-p.y)+v1.y*(p.x-fragmentTexCoord.x))/-crossProduct;
+    if(u<0||1<u){
         return false;// The intersection point is not between fragmentTexCoord and lightPos
     }
     return true;
 }
+
 
 void main()
 {
