@@ -29,6 +29,24 @@ vec2 uv_to_world(vec2 v){
 }
 
 bool isOcluded(vec2 p,vec2 q){
+    float x1 = min(p.x, q.x);
+    float w1 = abs(p.x - q.x);
+    float x2 = min(fragmentTexCoord.x, lightPos.x);
+    float w2 = abs(fragmentTexCoord.x - lightPos.x);
+
+    if(x1+w1<x2 || x2+w2<x1){
+        return false; //The lines cant intersect because their images on the x-axis dont intersect
+    }
+
+    float y1 = min(p.y, q.y);
+    float h1 = abs(p.y - q.y);
+    float y2 = min(fragmentTexCoord.y, lightPos.y);
+    float h2 = abs(fragmentTexCoord.y - lightPos.y);
+
+    if(y1+h1<y2 || y2+h2<y1){
+        return false; //The lines cant intersect because their images on the y-axis dont intersect
+    }
+
     vec2 v1=q-p;
     vec2 v2=lightPos-fragmentTexCoord;
 
