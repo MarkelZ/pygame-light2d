@@ -119,17 +119,17 @@ class LightingEngine:
         self._layer_fg.texture.repeat_x = False
         self._layer_fg.texture.repeat_y = False
 
-    def _create_ssbos(self, max_num_hulls=256):
+    def _create_ssbos(self, max_num_hulls=1024):
         # Create SSBOs
         self._graphics.reserve_uniform_block(
             shader=self._prog_light,
             ubo_name='hullVSSBO',
-            nbytes=6*max_num_hulls)
+            nbytes=6*8*max_num_hulls)
 
         self._graphics.reserve_uniform_block(
             shader=self._prog_light,
             ubo_name='hullIndSSBO',
-            nbytes=max_num_hulls)
+            nbytes=8*max_num_hulls)
 
     @property
     def graphics(self) -> RenderEngine:
