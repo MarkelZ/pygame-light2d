@@ -17,7 +17,6 @@ classifiers = [
 keywords = ["pygame", "light", "lights", "engine", "shadows", "dynamic", "2D"]
 dependencies = [
     "numpy>=1.24.1",
-    "pygame>=2.3.0",
     "moderngl>=5.8.2",
     "PyOpenGL>=3.1.6",
     "pygame-render>=1.3.0",
