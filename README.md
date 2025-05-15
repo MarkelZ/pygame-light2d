@@ -1,4 +1,9 @@
 # Pygame Light 2D
+[![PyPI version](https://img.shields.io/pypi/v/pygame-light2d.svg)](https://pypi.org/project/pygame-light2d/)
+![License](https://img.shields.io/github/license/markelz/pygame-light2d)
+[![PyPI Downloads](https://static.pepy.tech/badge/pygame-light2d)](https://pepy.tech/projects/pygame-light2d)
+![GitHub stars](https://img.shields.io/github/stars/markelz/pygame-light2d?style=social)
+
 This module provides fast 2D dynamic lighting for `pygame`. 
 
 https://github.com/MarkelZ/pygame-light2d/assets/60424316/a8d1322b-ac05-47d4-8b04-2786f0d3c96a
